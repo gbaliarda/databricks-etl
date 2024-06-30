@@ -15,7 +15,6 @@ df_bt_users_transactions = spark.read.csv("file:/Workspace/Repos/gbaliarda@itba.
 df_lk_onboarding = spark.read.csv("file:/Workspace/Repos/gbaliarda@itba.edu.ar/databricks-etl/data/lk_onboarding.csv", header=True)
 df_lk_users = spark.read.csv("file:/Workspace/Repos/gbaliarda@itba.edu.ar/databricks-etl/data/lk_users.csv", header=True)
 
-
 # COMMAND ----------
 
 df_bt_users_transactions.show()
@@ -57,8 +56,6 @@ def calculate_completeness_percentages(df, columns):
         
     return completeness_percentages
 
-
-
 # COMMAND ----------
 
 def plot_completeness_percentages(completeness_percentages):
@@ -98,7 +95,6 @@ df_lk_users_columns = ["_c0", "user_id", "name", "email", "address", "birth_dt",
 completeness_percentages_lk_users = calculate_completeness_percentages(df_lk_users, df_lk_users_columns)
 plot_completeness_percentages(completeness_percentages_lk_users)
 
-
 # COMMAND ----------
 
 # MAGIC %md
@@ -127,7 +123,6 @@ df_lk_users_columns = ["_c0", "user_id"]
 percentages_bt_users_transactions = calculate_uniqueness_percentage(df_bt_users_transactions, df_bt_users_transactions_columns)
 percentages_lk_onboarding = calculate_uniqueness_percentage(df_lk_onboarding, df_lk_onboarding_columns)
 percentages_lk_users = calculate_uniqueness_percentage(df_lk_users, df_lk_users_columns)
-
 
 # COMMAND ----------
 
@@ -194,7 +189,6 @@ unique_user_ids_bt = df_bt_users_transactions.select("user_id").distinct().count
 unique_user_ids_onboarding = df_lk_onboarding.select("user_id").distinct().count()
 unique_user_ids_lk_users = df_lk_users.select("user_id").distinct().count()
 
-
 # COMMAND ----------
 
 dataframes = ['df_bt_users_transactions', 'df_lk_onboarding', 'df_lk_users']
@@ -222,3 +216,53 @@ for i, bar in enumerate(bars):
 plt.legend()
 
 plt.show()
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC # Analisis estadístico descriptivo
+
+# COMMAND ----------
+
+
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC # Analisis temporales
+
+# COMMAND ----------
+
+
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC # Analisis de correlacion
+
+# COMMAND ----------
+
+
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC # Analisis de Categorizacion
+
+# COMMAND ----------
+
+
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC # Analisis de Anomalías
+
+# COMMAND ----------
+
+
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC
