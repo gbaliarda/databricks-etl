@@ -15,9 +15,14 @@ spark = SparkSession.builder.appName("BigData").getOrCreate()
 
 # COMMAND ----------
 
-df_bt_users_transactions = spark.read.csv("file:/Workspace/Repos/gbaliarda@itba.edu.ar/databricks-etl/data/bt_users_transactions.csv", header=True)
-df_lk_onboarding = spark.read.csv("file:/Workspace/Repos/gbaliarda@itba.edu.ar/databricks-etl/data/lk_onboarding.csv", header=True)
-df_lk_users = spark.read.csv("file:/Workspace/Repos/gbaliarda@itba.edu.ar/databricks-etl/data/lk_users.csv", header=True)
+dbutils.widgets.text("data_folder", "/Workspace/Repos/gbaliarda@itba.edu.ar/databricks-etl/data", "Data Folder")
+data_folder = dbutils.widgets.get("data_folder")
+
+# COMMAND ----------
+
+df_bt_users_transactions = spark.read.csv(f"file:{data_folder}/bt_users_transactions.csv", header=True)
+df_lk_onboarding = spark.read.csv(f"file:{data_folder}/lk_onboarding.csv", header=True)
+df_lk_users = spark.read.csv(f"file:{data_folder}/lk_users.csv", header=True)
 
 # COMMAND ----------
 
@@ -38,7 +43,7 @@ csv_options = {
     "escape": "\"",
 }
 
-df_lk_users = spark.read.csv("file:/Workspace/Repos/gbaliarda@itba.edu.ar/databricks-etl/data/lk_users.csv", header=True, multiLine=True)
+df_lk_users = spark.read.csv(f"file:{data_folder}/lk_users.csv", header=True, multiLine=True)
 df_lk_users.show()
 
 # COMMAND ----------
@@ -48,9 +53,9 @@ df_lk_users.show()
 
 # COMMAND ----------
 
-df_bt_users_transactions = spark.read.csv("file:/Workspace/Repos/gbaliarda@itba.edu.ar/databricks-etl/data/bt_users_transactions.csv", header=True)
-df_lk_onboarding = spark.read.csv("file:/Workspace/Repos/gbaliarda@itba.edu.ar/databricks-etl/data/lk_onboarding.csv", header=True)
-df_lk_users = spark.read.csv("file:/Workspace/Repos/gbaliarda@itba.edu.ar/databricks-etl/data/lk_users.csv", header=True, multiLine=True)
+df_bt_users_transactions = spark.read.csv(f"file:{data_folder}/bt_users_transactions.csv", header=True)
+df_lk_onboarding = spark.read.csv(f"file:{data_folder}/lk_onboarding.csv", header=True)
+df_lk_users = spark.read.csv(f"file:{data_folder}/lk_users.csv", header=True, multiLine=True)
 
 # COMMAND ----------
 
@@ -68,7 +73,7 @@ def calculate_completeness_percentages(df, columns):
 
 # COMMAND ----------
 
-def plot_completeness_percentages(completeness_percentages):
+def plot_completeness_percentages(completeness_percentages, title):
     df_completeness_percentages = pd.DataFrame(list(completeness_percentages.items()), columns=['Column', 'Completeness Percentage'])
 
     df_completeness_percentages = df_completeness_percentages.sort_values(by='Completeness Percentage', ascending=False)
@@ -85,8 +90,8 @@ def plot_completeness_percentages(completeness_percentages):
         ax.annotate(percentage, (x, y), ha='center', va='center', fontsize=10, color='black')
 
 
-    ax.set_title('Completeness Percentage per Column')
-    ax.set_xlabel('Completeness Percentage')
+    ax.set_title(title)
+    ax.set_xlabel('Completeness Percentage per Column')
     ax.set_ylabel('Column')
 
     plt.show()
@@ -95,15 +100,15 @@ def plot_completeness_percentages(completeness_percentages):
 
 df_bt_users_transactions_columns = ["_c0", "user_id", "transaction_dt", "type", "segment"]
 completeness_percentages_bt_users_transactions = calculate_completeness_percentages(df_bt_users_transactions, df_bt_users_transactions_columns)
-plot_completeness_percentages(completeness_percentages_bt_users_transactions)
+plot_completeness_percentages(completeness_percentages_bt_users_transactions, "User Transactions")
 
 df_lk_onboarding_columns = ["_c0", "Unnamed: 0", "first_login_dt", "week_year", "user_id", "habito", "habito_dt", "activacion", "activacion_dt", "setup", "setup_dt", "return", "return_dt"]
 completeness_percentages_lk_onboarding = calculate_completeness_percentages(df_lk_onboarding, df_lk_onboarding_columns)
-plot_completeness_percentages(completeness_percentages_lk_onboarding)
+plot_completeness_percentages(completeness_percentages_lk_onboarding, "Onboarding")
 
 df_lk_users_columns = ["_c0", "user_id", "name", "email", "address", "birth_dt", "phone", "type", "rubro"]
 completeness_percentages_lk_users = calculate_completeness_percentages(df_lk_users, df_lk_users_columns)
-plot_completeness_percentages(completeness_percentages_lk_users)
+plot_completeness_percentages(completeness_percentages_lk_users, "Users")
 
 # COMMAND ----------
 
@@ -112,9 +117,9 @@ plot_completeness_percentages(completeness_percentages_lk_users)
 
 # COMMAND ----------
 
-df_bt_users_transactions = spark.read.csv("file:/Workspace/Repos/gbaliarda@itba.edu.ar/databricks-etl/data/bt_users_transactions.csv", header=True)
-df_lk_onboarding = spark.read.csv("file:/Workspace/Repos/gbaliarda@itba.edu.ar/databricks-etl/data/lk_onboarding.csv", header=True)
-df_lk_users = spark.read.csv("file:/Workspace/Repos/gbaliarda@itba.edu.ar/databricks-etl/data/lk_users.csv", header=True, multiLine=True)
+df_bt_users_transactions = spark.read.csv(f"file:{data_folder}/bt_users_transactions.csv", header=True)
+df_lk_onboarding = spark.read.csv(f"file:{data_folder}/lk_onboarding.csv", header=True)
+df_lk_users = spark.read.csv(f"file:{data_folder}/lk_users.csv", header=True, multiLine=True)
 
 # COMMAND ----------
 
@@ -183,9 +188,9 @@ plt.show()
 
 # COMMAND ----------
 
-df_bt_users_transactions = spark.read.csv("file:/Workspace/Repos/gbaliarda@itba.edu.ar/databricks-etl/data/bt_users_transactions.csv", header=True)
-df_lk_onboarding = spark.read.csv("file:/Workspace/Repos/gbaliarda@itba.edu.ar/databricks-etl/data/lk_onboarding.csv", header=True)
-df_lk_users = spark.read.csv("file:/Workspace/Repos/gbaliarda@itba.edu.ar/databricks-etl/data/lk_users.csv", header=True, multiLine=True)
+df_bt_users_transactions = spark.read.csv(f"file:{data_folder}/bt_users_transactions.csv", header=True)
+df_lk_onboarding = spark.read.csv(f"file:{data_folder}/lk_onboarding.csv", header=True)
+df_lk_users = spark.read.csv(f"file:{data_folder}/lk_users.csv", header=True, multiLine=True)
 
 # COMMAND ----------
 
@@ -340,9 +345,9 @@ generate_validation_plots(df_lk_users, "df_lk_users")
 
 # COMMAND ----------
 
-df_bt_users_transactions = spark.read.csv("file:/Workspace/Repos/gbaliarda@itba.edu.ar/databricks-etl/data/bt_users_transactions.csv", header=True)
-df_lk_onboarding = spark.read.csv("file:/Workspace/Repos/gbaliarda@itba.edu.ar/databricks-etl/data/lk_onboarding.csv", header=True)
-df_lk_users = spark.read.csv("file:/Workspace/Repos/gbaliarda@itba.edu.ar/databricks-etl/data/lk_users.csv", header=True, multiLine=True)
+df_bt_users_transactions = spark.read.csv(f"file:{data_folder}/bt_users_transactions.csv", header=True)
+df_lk_onboarding = spark.read.csv(f"file:{data_folder}/lk_onboarding.csv", header=True)
+df_lk_users = spark.read.csv(f"file:{data_folder}/lk_users.csv", header=True, multiLine=True)
 
 # COMMAND ----------
 
@@ -394,9 +399,9 @@ plt.show()
 
 # COMMAND ----------
 
-df_bt_users_transactions = spark.read.csv("file:/Workspace/Repos/gbaliarda@itba.edu.ar/databricks-etl/data/bt_users_transactions.csv", header=True)
-df_lk_onboarding = spark.read.csv("file:/Workspace/Repos/gbaliarda@itba.edu.ar/databricks-etl/data/lk_onboarding.csv", header=True)
-df_lk_users = spark.read.csv("file:/Workspace/Repos/gbaliarda@itba.edu.ar/databricks-etl/data/lk_users.csv", header=True)
+df_bt_users_transactions = spark.read.csv(f"file:{data_folder}/bt_users_transactions.csv", header=True)
+df_lk_onboarding = spark.read.csv(f"file:{data_folder}/lk_onboarding.csv", header=True)
+df_lk_users = spark.read.csv(f"file:{data_folder}/lk_users.csv", header=True, multiLine=True)
 
 # COMMAND ----------
 
@@ -553,9 +558,9 @@ plt.show()
 
 # COMMAND ----------
 
-df_bt_users_transactions = spark.read.csv("file:/Workspace/Repos/gbaliarda@itba.edu.ar/databricks-etl/data/bt_users_transactions.csv", header=True)
-df_lk_onboarding = spark.read.csv("file:/Workspace/Repos/gbaliarda@itba.edu.ar/databricks-etl/data/lk_onboarding.csv", header=True)
-df_lk_users = spark.read.csv("file:/Workspace/Repos/gbaliarda@itba.edu.ar/databricks-etl/data/lk_users.csv", header=True, multiLine=True)
+df_bt_users_transactions = spark.read.csv(f"file:{data_folder}/bt_users_transactions.csv", header=True)
+df_lk_onboarding = spark.read.csv(f"file:{data_folder}/lk_onboarding.csv", header=True)
+df_lk_users = spark.read.csv(f"file:{data_folder}/lk_users.csv", header=True, multiLine=True)
 
 # COMMAND ----------
 
@@ -568,19 +573,14 @@ df.show()
 
 # COMMAND ----------
 
-
-
-
-# COMMAND ----------
-
 # MAGIC %md
 # MAGIC # Analisis de correlacion
 
 # COMMAND ----------
 
-df_bt_users_transactions = spark.read.csv("file:/Workspace/Repos/gbaliarda@itba.edu.ar/databricks-etl/data/bt_users_transactions.csv", header=True)
-df_lk_onboarding = spark.read.csv("file:/Workspace/Repos/gbaliarda@itba.edu.ar/databricks-etl/data/lk_onboarding.csv", header=True)
-df_lk_users = spark.read.csv("file:/Workspace/Repos/gbaliarda@itba.edu.ar/databricks-etl/data/lk_users.csv", header=True, multiLine=True)
+df_bt_users_transactions = spark.read.csv(f"file:{data_folder}/bt_users_transactions.csv", header=True)
+df_lk_onboarding = spark.read.csv(f"file:{data_folder}/lk_onboarding.csv", header=True)
+df_lk_users = spark.read.csv(f"file:{data_folder}/lk_users.csv", header=True, multiLine=True)
 
 # COMMAND ----------
 
