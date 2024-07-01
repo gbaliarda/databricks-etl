@@ -1,0 +1,76 @@
+{
+	"name": "ds_input_onboarding",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "bsinput",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "DelimitedText",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobStorageLocation",
+				"fileName": "lk_onboarding.csv",
+				"container": "input"
+			},
+			"columnDelimiter": ",",
+			"escapeChar": "\\",
+			"firstRowAsHeader": true,
+			"quoteChar": "\""
+		},
+		"schema": [
+			{
+				"name": "Prop_0",
+				"type": "String"
+			},
+			{
+				"name": "Unnamed: 0",
+				"type": "String"
+			},
+			{
+				"name": "first_login_dt",
+				"type": "String"
+			},
+			{
+				"name": "week_year",
+				"type": "String"
+			},
+			{
+				"name": "user_id",
+				"type": "String"
+			},
+			{
+				"name": "habito",
+				"type": "String"
+			},
+			{
+				"name": "habito_dt",
+				"type": "String"
+			},
+			{
+				"name": "activacion",
+				"type": "String"
+			},
+			{
+				"name": "activacion_dt",
+				"type": "String"
+			},
+			{
+				"name": "setup",
+				"type": "String"
+			},
+			{
+				"name": "setup_dt",
+				"type": "String"
+			},
+			{
+				"name": "return",
+				"type": "String"
+			},
+			{
+				"name": "return_dt",
+				"type": "String"
+			}
+		]
+	}
+}

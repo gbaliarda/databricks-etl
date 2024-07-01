@@ -1,0 +1,44 @@
+{
+	"name": "ds_input_transactions",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "bsinput",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "DelimitedText",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobStorageLocation",
+				"fileName": "bt_users_transactions.csv",
+				"container": "input"
+			},
+			"columnDelimiter": ",",
+			"escapeChar": "\\",
+			"firstRowAsHeader": true,
+			"quoteChar": "\""
+		},
+		"schema": [
+			{
+				"name": "Prop_0",
+				"type": "String"
+			},
+			{
+				"name": "user_id",
+				"type": "String"
+			},
+			{
+				"name": "transaction_dt",
+				"type": "String"
+			},
+			{
+				"name": "type",
+				"type": "String"
+			},
+			{
+				"name": "segment",
+				"type": "String"
+			}
+		]
+	}
+}
