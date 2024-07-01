@@ -1,0 +1,9 @@
+{
+	"name": "fintech-onboarding",
+	"location": "brazilsouth",
+	"identity": {
+		"type": "SystemAssigned",
+		"principalId": "d8818857-71ba-4355-93c7-6a549e1b599e",
+		"tenantId": "a1f50a97-21c0-49a7-a9d4-f244ebb42da7"
+	}
+}
