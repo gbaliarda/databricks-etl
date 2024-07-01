@@ -1,7 +1,7 @@
 # Databricks notebook source
 import pandas as pd
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import col, length, regexp_extract, to_date, weekofyear, year, lag, to_timestamp, trim, unix_timestamp
+from pyspark.sql.functions import col, length, regexp_extract, to_date, weekofyear, year, lag, to_timestamp, trim, unix_timestamp, count
 from pyspark.sql.types import IntegerType, FloatType, TimestampType
 from pyspark.sql.window import Window
 import matplotlib.pyplot as plt
@@ -180,6 +180,19 @@ for bar in bars3:
 plt.tight_layout()
 
 plt.show()
+
+# COMMAND ----------
+
+duplicated_user_ids = df_lk_onboarding.groupBy("user_id").agg(count("user_id").alias("count")).filter(col("count") > 1).select("user_id")
+
+duplicated_rows = df_lk_onboarding.join(duplicated_user_ids, on="user_id", how="inner")
+
+duplicated_rows.show(truncate=False)
+
+user_id_to_filter = ["MLB10618286450", "MLB3751318220"]
+filtered_df = df_lk_onboarding.filter(col("user_id").isin(user_id_to_filter)).sort("user_id")
+filtered_df.show(truncate=False)
+
 
 # COMMAND ----------
 
@@ -659,20 +672,76 @@ plt.show()
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC # Analisis de Categorizacion
-
-# COMMAND ----------
-
-
-
-# COMMAND ----------
-
-# MAGIC %md
 # MAGIC # Analisis de Anomalías
 
 # COMMAND ----------
 
+df_bt_users_transactions = spark.read.csv(f"file:{data_folder}/bt_users_transactions.csv", header=True)
+df_lk_onboarding = spark.read.csv(f"file:{data_folder}/lk_onboarding.csv", header=True)
+df_lk_users = spark.read.csv(f"file:{data_folder}/lk_users.csv", header=True, multiLine=True)
 
+# COMMAND ----------
+
+df_bt_users_transactions = df_bt_users_transactions \
+    .withColumn("transaction_dt", to_date(col("transaction_dt"), "yyyy-MM-dd"))
+
+df_lk_onboarding = df_lk_onboarding \
+    .withColumn("first_login_dt", to_date(col("first_login_dt"), "yyyy-MM-dd")) \
+    .withColumn("habito_dt", to_date(col("habito_dt"), "yyyy-MM-dd")) \
+    .withColumn("activacion_dt", to_date(col("activacion_dt"), "yyyy-MM-dd")) \
+    .withColumn("return_dt", to_date(col("return_dt"), "yyyy-MM-dd"))
+
+df_lk_users = df_lk_users \
+    .withColumn("birth_dt", to_date(col("birth_dt"), "yyyy-MM-dd"))
+
+df_bt_users_transactions = df_bt_users_transactions \
+    .withColumn("type", col("type").cast(IntegerType())) \
+    .withColumn("segment", col("segment").cast(IntegerType()))
+
+df_lk_onboarding = df_lk_onboarding \
+    .withColumn("Unnamed: 0", col("Unnamed: 0").cast(IntegerType())) \
+    .withColumn("week_year", col("week_year").cast(IntegerType())) \
+    .withColumn("habito", col("habito").cast(FloatType())) \
+    .withColumn("activacion", col("activacion").cast(FloatType())) \
+    .withColumn("setup", col("setup").cast(FloatType())) \
+    .withColumn("return", col("return").cast(FloatType()))
+
+df_lk_users = df_lk_users \
+    .withColumn("type", col("type").cast(IntegerType())) \
+    .withColumn("rubro", col("rubro").cast(IntegerType()))
+
+# COMMAND ----------
+
+numeric_columns_bt = ["type", "segment"]
+numeric_columns_lk_onboarding = ["week_year", "habito", "activacion", "setup", "return"]
+numeric_columns_lk_users = ["type", "rubro"]
+
+stats_bt = df_bt_users_transactions.select(numeric_columns_bt).describe().show()
+stats_lk_onboarding = df_lk_onboarding.select(numeric_columns_lk_onboarding).describe().show()
+stats_lk_users = df_lk_users.select(numeric_columns_lk_users).describe().show()
+
+# COMMAND ----------
+
+df_bt_users_transactions_pd = df_bt_users_transactions.select(numeric_columns_bt).toPandas()
+df_lk_onboarding_pd = df_lk_onboarding.select(numeric_columns_lk_onboarding).toPandas()
+df_lk_users_pd = df_lk_users.select(numeric_columns_lk_users).toPandas()
+
+fig, axs = plt.subplots(3, 1, figsize=(12, 18))
+
+sns.boxplot(data=df_bt_users_transactions_pd, ax=axs[0], palette="Set2")
+sns.stripplot(data=df_bt_users_transactions_pd, ax=axs[0], alpha=0.5)
+axs[0].set_title('Boxplot and Points for bt_users_transactions')
+
+sns.boxplot(data=df_lk_onboarding_pd, ax=axs[1], palette="Set2")
+sns.stripplot(data=df_lk_onboarding_pd, ax=axs[1], alpha=0.5)
+axs[1].set_title('Boxplot and Points for lk_onboarding')
+
+sns.boxplot(data=df_lk_users_pd, ax=axs[2], palette="Set2")
+sns.stripplot(data=df_lk_users_pd, ax=axs[2], alpha=0.5)
+axs[2].set_title('Boxplot and Points for lk_users')
+
+plt.tight_layout()
+plt.show()
 
 # COMMAND ----------
 
