@@ -1,0 +1,21 @@
+{
+	"name": "Preprocess",
+	"type": "Microsoft.DataFactory/factories/linkedservices",
+	"properties": {
+		"description": "preprocess the data, eliminating unnecessary columns",
+		"annotations": [],
+		"type": "AzureDatabricks",
+		"typeProperties": {
+			"domain": "https://adb-4139596699578409.9.azuredatabricks.net",
+			"newClusterNodeType": "Standard_DS3_v2",
+			"newClusterNumOfWorker": "1",
+			"newClusterSparkEnvVars": {
+				"PYSPARK_PYTHON": "/databricks/python3/bin/python3"
+			},
+			"newClusterVersion": "14.1.x-scala2.12",
+			"clusterOption": "Fixed",
+			"newClusterInitScripts": [],
+			"encryptedCredential": "ew0KICAiVmVyc2lvbiI6ICIyMDE3LTExLTMwIiwNCiAgIlByb3RlY3Rpb25Nb2RlIjogIktleSIsDQogICJTZWNyZXRDb250ZW50VHlwZSI6ICJQbGFpbnRleHQiLA0KICAiQ3JlZGVudGlhbElkIjogIkRBVEFGQUNUT1JZQENFQTlBNUQ5LUExMzUtNDRGRS05MTMyLUM1MUNENUIzQTk5M18wMTFiZGQ3ZC03NDllLTRjYjUtOTAzMy05MjA2ZTI0Y2FhZDgiDQp9"
+		}
+	}
+}
