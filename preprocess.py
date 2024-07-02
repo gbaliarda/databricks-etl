@@ -15,14 +15,27 @@ spark = SparkSession.builder.appName("BigData").getOrCreate()
 
 # COMMAND ----------
 
-dbutils.widgets.text("data_folder", "/Workspace/Repos/gbaliarda@itba.edu.ar/databricks-etl/data", "Data Folder")
-data_folder = dbutils.widgets.get("data_folder")
+dbutils.widgets.text("STORAGE_ACCOUNT_KEY", "<STORAGE_ACCOUNT_KEY>", "STORAGE ACCOUNT KEY")
+dbutils.widgets.text("CONTAINER_NAME", "<CONTAINER_NAME>", "BLOB STORAGE CONTAINER NAME")
+dbutils.widgets.text("STORAGE_ACCOUNT_NAME", "<STORAGE_ACCOUNT_NAME>", "BLOB STORAGE ACCOUNT NAME")
+
+# Configuration for Azure Blob Storage 
+storage_account_key = dbutils.widgets.get("STORAGE_ACCOUNT_KEY")
+container_name = dbutils.widgets.get("CONTAINER_NAME")
+storage_account_name = dbutils.widgets.get("STORAGE_ACCOUNT_NAME")
+spark.conf.set(f"fs.azure.account.key.{storage_account_name}.blob.core.windows.net", storage_account_key)
+
+
+data_folder = f"wasbs://{container_name}@{storage_account_name}.blob.core.windows.net/"
+output_data_folder = f"wasbs://{container_name}@{storage_account_name}.blob.core.windows.net/output"
+
+dbutils.fs.ls(f"wasbs://{container_name}@{storage_account_name}.blob.core.windows.net/")
 
 # COMMAND ----------
 
-df_bt_users_transactions = spark.read.csv(f"file:{data_folder}/bt_users_transactions.csv", header=True)
-df_lk_onboarding = spark.read.csv(f"file:{data_folder}/lk_onboarding.csv", header=True)
-df_lk_users = spark.read.csv(f"file:{data_folder}/lk_users.csv", header=True, multiLine=True)
+df_bt_users_transactions = spark.read.csv(f"{data_folder}/bt_users_transactions.csv", header=True)
+df_lk_onboarding = spark.read.csv(f"{data_folder}/lk_onboarding.csv", header=True)
+df_lk_users = spark.read.csv(f"{data_folder}/lk_users.csv", header=True, multiLine=True)
 
 # COMMAND ----------
 
