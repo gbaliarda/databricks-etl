@@ -354,6 +354,46 @@ generate_validation_plots(df_lk_users, "df_lk_users")
 # COMMAND ----------
 
 # MAGIC %md
+# MAGIC ### Analisis de Flags
+
+# COMMAND ----------
+
+df_bt_users_aggregated = df_bt_users_transactions.groupBy("user_id").agg(count("*").alias("transaction_count"))
+df_lk_onboarding_with_transactions = df_lk_onboarding.join(df_bt_users_aggregated, on="user_id", how="right")
+
+# COMMAND ----------
+
+total_habito = df_lk_onboarding_with_transactions.filter(col("habito") == 1).count()
+valid_habito = df_lk_onboarding_with_transactions.filter((col("habito") == 1) & (col("transaction_count") >= 5)).count()
+
+percentage_valid_habito = (valid_habito / total_habito) * 100 if total_habito > 0 else 0
+
+total_activacion = df_lk_onboarding_with_transactions.filter(col("activacion") == 1).count()
+valid_activacion = df_lk_onboarding_with_transactions.filter((col("activacion") == 1) & (col("transaction_count") >= 1)).count()
+
+percentage_valid_activacion = (valid_activacion / total_activacion) * 100 if total_activacion > 0 else 0
+
+
+labels = ['habito', 'activacion']
+percentages = [percentage_valid_habito, percentage_valid_activacion]
+
+fig, ax = plt.subplots()
+bars = ax.bar(labels, percentages, color=['coral', 'green'])
+
+for bar in bars:
+    yval = bar.get_height()
+    ax.text(bar.get_x() + bar.get_width() / 2, yval - 8, f'{yval:.2f}%', ha='center', va='bottom', color='black')
+
+plt.xlabel('Column')
+plt.ylabel('%')
+plt.title('Valid % of habito and activacion')
+plt.ylim(0, 100)
+
+plt.show()
+
+# COMMAND ----------
+
+# MAGIC %md
 # MAGIC # Relación entre DFs
 
 # COMMAND ----------
