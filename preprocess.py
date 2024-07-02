@@ -1,7 +1,7 @@
 # Databricks notebook source
 import pandas as pd
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import when, col, length, regexp_extract, to_date, weekofyear, year, lag, to_timestamp, trim, unix_timestamp
+from pyspark.sql.functions import when, col, length, regexp_extract, to_date, weekofyear, year, lag, to_timestamp, trim, unix_timestamp, current_date
 from pyspark.sql.types import IntegerType, FloatType, TimestampType
 from pyspark.sql.window import Window
 import matplotlib.pyplot as plt
@@ -27,8 +27,6 @@ spark.conf.set(f"fs.azure.account.key.{storage_account_name}.blob.core.windows.n
 
 
 data_folder = f"wasbs://{container_name}@{storage_account_name}.blob.core.windows.net/"
-output_data_folder = f"wasbs://{container_name}@{storage_account_name}.blob.core.windows.net/output"
-
 dbutils.fs.ls(f"wasbs://{container_name}@{storage_account_name}.blob.core.windows.net/")
 
 # COMMAND ----------
@@ -202,26 +200,136 @@ print(f"Rows without this inconsistency: {df_lk_onboarding.count()}")
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC # Cantidad de DROP (Usuarios que no hicieron más nada despues del primer login)
+# MAGIC # Eliminar usuarios sin first login datetime
 
 # COMMAND ----------
 
-drops = df_lk_onboarding.filter(
-    (col('first_login_dt').isNotNull()) &
-    (col('activacion') == 0) &
-    (col('habito') == 0) &
-    (col('setup') == 0)
-)
+df_lk_onboarding = df_lk_onboarding.filter(col('first_login_dt').isNotNull())
 
-num_drop_users = drops.count()
-print(f"Number of drop users: {num_drop_users}")
-
-drops.show()
+print(f"Filas después de eliminar first_login_dt nulos: {df_lk_onboarding.count()}")
 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC # Preprocesamiento de los dataframes en conjunto
+# MAGIC # Nueva Columna Para agrupar según edades
+
+# COMMAND ----------
+
+# Define age groups
+current_year = year(current_date())
+
+df_lk_users = df_lk_users.withColumn(
+    "age_group",
+    when((current_year - year(col("birth_dt"))) < 18, "Adolescent")
+    .when((current_year - year(col("birth_dt"))) < 60, "Adult")
+    .otherwise("Elderly")
+)
+
+df_lk_users.show(10)
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC # Nueva columna para indicar si es seller o no
+
+# COMMAND ----------
+
+df_lk_users = df_lk_users.withColumn(
+    "is_seller",
+    when(col("rubro") != 0, "Seller").otherwise("Non-Seller")
+)
+
+df_lk_users.show(10)
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC # Nueva columna para indicar si dropeo la app
+
+# COMMAND ----------
+
+df_lk_onboarding = df_lk_onboarding.withColumn(
+    "drop",
+    when(
+        (col('first_login_dt').isNotNull()) &
+        (col('activacion') == 0) &
+        (col('habito') == 0) &
+        (col('setup') == 0),
+        1
+    ).otherwise(0)
+)
+df_lk_onboarding.show(10)
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC # Crear Dataframe final para mostrar los casos de onboarding
+
+# COMMAND ----------
+
+# Join df_users and df_onboarding on user_id
+df_final = df_lk_users.join(df_lk_onboarding, on="user_id", how="inner")
+
+# Select relevant columns for analysis
+df_final = df_final.select(
+    "user_id",
+    "rubro",
+    "birth_dt",
+    "age_group",
+    "is_seller",
+    "first_login_dt",
+    "habito",
+    "habito_dt",
+    "activacion",
+    "activacion_dt",
+    "setup",
+    "setup_dt",
+    "return",
+    "return_dt",
+    "drop"
+)
+
+df_final.show(10)
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC # Conexion con Azure SQL Database
+
+# COMMAND ----------
+
+dbutils.widgets.text("JDBC_URL", "<JDBC_URL>", "JDBC URL")
+
+
+# COMMAND ----------
+
+# Database connection details
+jdbc_url = dbutils.widgets.get("JDBC_URL")
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC # Guardar en la Base De Datos SQL Azure
+
+# COMMAND ----------
+
+# Save df_users to SQL
+df_lk_users.write.jdbc(url=jdbc_url, table="users", mode="overwrite")
+
+# Save df_transactions to SQL
+df_bt_users_transactions.write.jdbc(url=jdbc_url, table="users_transactions", mode="overwrite")
+
+# Save df_onboarding to SQL
+df_lk_onboarding.write.jdbc(url=jdbc_url, table="onboarding", mode="overwrite")
+
+# Save df_final to SQL
+df_final.write.jdbc(url=jdbc_url, table="analysis", mode="overwrite")
+
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC
 
 # COMMAND ----------
 
