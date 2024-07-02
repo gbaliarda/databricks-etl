@@ -1,7 +1,7 @@
 # Databricks notebook source
 import pandas as pd
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import col, length, regexp_extract, to_date, weekofyear, year, lag, to_timestamp, trim, unix_timestamp, count
+from pyspark.sql.functions import col, length, regexp_extract, to_date, weekofyear, year, lag, to_timestamp, trim, unix_timestamp, count, when
 from pyspark.sql.types import IntegerType, FloatType, TimestampType
 from pyspark.sql.window import Window
 import matplotlib.pyplot as plt
@@ -359,30 +359,44 @@ generate_validation_plots(df_lk_users, "df_lk_users")
 # COMMAND ----------
 
 df_bt_users_aggregated = df_bt_users_transactions.groupBy("user_id").agg(count("*").alias("transaction_count"))
-df_lk_onboarding_with_transactions = df_lk_onboarding.join(df_bt_users_aggregated, on="user_id", how="right")
+df_lk_onboarding_with_transactions = df_lk_onboarding.join(df_bt_users_aggregated, on="user_id", how="left")
+
+df_lk_onboarding_with_transactions = df_lk_onboarding_with_transactions.withColumn("transaction_count", when(col("transaction_count").isNull(), "0").otherwise(col("transaction_count")))
 
 # COMMAND ----------
 
 total_habito = df_lk_onboarding_with_transactions.filter(col("habito") == 1).count()
 valid_habito = df_lk_onboarding_with_transactions.filter((col("habito") == 1) & (col("transaction_count") >= 5)).count()
 
-percentage_valid_habito = (valid_habito / total_habito) * 100 if total_habito > 0 else 0
+percentage_valid_habito = (valid_habito / total_habito) * 100 if total_habito > 0 else 100
+
 
 total_activacion = df_lk_onboarding_with_transactions.filter(col("activacion") == 1).count()
 valid_activacion = df_lk_onboarding_with_transactions.filter((col("activacion") == 1) & (col("transaction_count") >= 1)).count()
 
-percentage_valid_activacion = (valid_activacion / total_activacion) * 100 if total_activacion > 0 else 0
+percentage_valid_activacion = (valid_activacion / total_activacion) * 100 if total_activacion > 0 else 100
 
 
-labels = ['habito', 'activacion']
-percentages = [percentage_valid_habito, percentage_valid_activacion]
+total_no_habito = df_lk_onboarding_with_transactions.filter(col("habito") == 0).count()
+valid_no_habito = df_lk_onboarding_with_transactions.filter((col("habito") == 0) & (col("transaction_count") < 5)).count()
+
+percentage_valid_no_habito = (valid_no_habito / total_no_habito) * 100 if total_no_habito > 0 else 100
+
+
+total_no_activacion = df_lk_onboarding_with_transactions.filter(col("activacion") == 0).count()
+valid_no_activacion = df_lk_onboarding_with_transactions.filter((col("activacion") == 0) & (col("transaction_count") == 0)).count()
+
+percentage_valid_no_activacion = (valid_no_activacion / total_no_activacion) * 100 if total_no_activacion > 0 else 100
+
+labels = ['habito', 'activacion', 'no_habito', 'no_activacion']
+percentages = [percentage_valid_habito, percentage_valid_activacion, percentage_valid_no_habito, percentage_valid_no_activacion]
 
 fig, ax = plt.subplots()
-bars = ax.bar(labels, percentages, color=['coral', 'green'])
+bars = ax.bar(labels, percentages)
 
 for bar in bars:
     yval = bar.get_height()
-    ax.text(bar.get_x() + bar.get_width() / 2, yval - 8, f'{yval:.2f}%', ha='center', va='bottom', color='black')
+    ax.text(bar.get_x() + bar.get_width() / 2, yval - 8 if yval > 8 else yval, f'{yval:.2f}%', ha='center', va='bottom', color='black')
 
 plt.xlabel('Column')
 plt.ylabel('%')
@@ -703,7 +717,6 @@ cast_columns = [col for col in df.columns if col.endswith("_cast")]
 
 df_correlation_matrix = df.select(df_bt_columns_to_correlate + df_lk_onboarding_columns_to_correlate + df_lk_users_columns_to_correlate).toPandas().corr()
 
-# Visualizar la matriz de correlación como heatmap
 plt.figure(figsize=(10, 8))
 sns.heatmap(df_correlation_matrix, annot=True, cmap='coolwarm', fmt=".2f", annot_kws={"size": 10})
 plt.title('Correlation Matrix')

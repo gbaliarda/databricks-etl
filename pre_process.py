@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
 import matplotlib.dates as mdates
+from azure.storage.blob import BlobServiceClient
 
 # COMMAND ----------
 
@@ -18,6 +19,9 @@ spark = SparkSession.builder.appName("BigData").getOrCreate()
 dbutils.widgets.text("STORAGE_ACCOUNT_KEY", "<STORAGE_ACCOUNT_KEY>", "STORAGE ACCOUNT KEY")
 dbutils.widgets.text("CONTAINER_NAME", "<CONTAINER_NAME>", "BLOB STORAGE CONTAINER NAME")
 dbutils.widgets.text("STORAGE_ACCOUNT_NAME", "<STORAGE_ACCOUNT_NAME>", "BLOB STORAGE ACCOUNT NAME")
+dbutils.widgets.text("TARGET_CONTAINER_NAME", "<TARGET_CONTAINER_NAME>", "BLOB STORAGE TARGET CONTAINER NAME")
+
+# COMMAND ----------
 
 # Configuration for Azure Blob Storage 
 storage_account_key = dbutils.widgets.get("STORAGE_ACCOUNT_KEY")
@@ -116,6 +120,7 @@ df_lk_users.show(10)
 
 # MAGIC %md
 # MAGIC # Eliminar inconsistencias (1 en habito 0 en activación)
+# MAGIC TODO: no eliminar, reemplazar 1 por 0 y viceversa
 
 # COMMAND ----------
 
@@ -211,125 +216,30 @@ print(f"Filas después de eliminar first_login_dt nulos: {df_lk_onboarding.count
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC # Nueva Columna Para agrupar según edades
+# MAGIC # Guardar dataframes procesados
 
 # COMMAND ----------
 
-# Define age groups
-current_year = year(current_date())
-
-df_lk_users = df_lk_users.withColumn(
-    "age_group",
-    when((current_year - year(col("birth_dt"))) < 18, "Adolescent")
-    .when((current_year - year(col("birth_dt"))) < 60, "Adult")
-    .otherwise("Elderly")
+target_container_name = dbutils.widgets.get("TARGET_CONTAINER_NAME")
+blob_service_client = BlobServiceClient(
+    account_url=f"https://{storage_account_name}.blob.core.windows.net",
+    credential=storage_account_key
 )
 
-df_lk_users.show(10)
+try:
+    container_client = blob_service_client.create_container(target_container_name)
+    print(f"Contenedor '{target_container_name}' creado con éxito.")
+except Exception as e:
+    print(f"El contenedor '{target_container_name}' ya existe o hubo un error: {e}")
 
 # COMMAND ----------
 
-# MAGIC %md
-# MAGIC # Nueva columna para indicar si es seller o no
+target_data_folder = f"wasbs://{target_container_name}@{storage_account_name}.blob.core.windows.net/"
 
-# COMMAND ----------
+df_bt_users_transactions.write.csv(f"{target_data_folder}/bt_users_transactions", header=True, mode="overwrite")
+df_lk_onboarding.write.csv(f"{target_data_folder}/lk_onboarding", header=True, mode="overwrite")
+df_lk_users.write.csv(f"{target_data_folder}/lk_users", header=True, mode="overwrite")
 
-df_lk_users = df_lk_users.withColumn(
-    "is_seller",
-    when(col("rubro") != 0, "Seller").otherwise("Non-Seller")
-)
-
-df_lk_users.show(10)
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC # Nueva columna para indicar si dropeo la app
-
-# COMMAND ----------
-
-df_lk_onboarding = df_lk_onboarding.withColumn(
-    "drop",
-    when(
-        (col('first_login_dt').isNotNull()) &
-        (col('activacion') == 0) &
-        (col('habito') == 0) &
-        (col('setup') == 0),
-        1
-    ).otherwise(0)
-)
-df_lk_onboarding.show(10)
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC # Crear Dataframe final para mostrar los casos de onboarding
-
-# COMMAND ----------
-
-# Join df_users and df_onboarding on user_id
-df_final = df_lk_users.join(df_lk_onboarding, on="user_id", how="inner")
-
-# Select relevant columns for analysis
-df_final = df_final.select(
-    "user_id",
-    "rubro",
-    "birth_dt",
-    "age_group",
-    "is_seller",
-    "first_login_dt",
-    "habito",
-    "habito_dt",
-    "activacion",
-    "activacion_dt",
-    "setup",
-    "setup_dt",
-    "return",
-    "return_dt",
-    "drop"
-)
-
-df_final.show(10)
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC # Conexion con Azure SQL Database
-
-# COMMAND ----------
-
-dbutils.widgets.text("JDBC_URL", "<JDBC_URL>", "JDBC URL")
-
-
-# COMMAND ----------
-
-# Database connection details
-jdbc_url = dbutils.widgets.get("JDBC_URL")
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC # Guardar en la Base De Datos SQL Azure
-
-# COMMAND ----------
-
-# Save df_users to SQL
-df_lk_users.write.jdbc(url=jdbc_url, table="users", mode="overwrite")
-
-# Save df_transactions to SQL
-df_bt_users_transactions.write.jdbc(url=jdbc_url, table="users_transactions", mode="overwrite")
-
-# Save df_onboarding to SQL
-df_lk_onboarding.write.jdbc(url=jdbc_url, table="onboarding", mode="overwrite")
-
-# Save df_final to SQL
-df_final.write.jdbc(url=jdbc_url, table="analysis", mode="overwrite")
-
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC
 
 # COMMAND ----------
 
