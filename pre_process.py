@@ -1,7 +1,7 @@
 # Databricks notebook source
 import pandas as pd
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import when, col, length, regexp_extract, to_date, weekofyear, year, lag, to_timestamp, trim, unix_timestamp, current_date
+from pyspark.sql.functions import when, col, length, regexp_extract, to_date, weekofyear, year, lag, to_timestamp, trim, unix_timestamp, current_date, count, lit
 from pyspark.sql.types import IntegerType, FloatType, TimestampType
 from pyspark.sql.window import Window
 import matplotlib.pyplot as plt
@@ -102,25 +102,61 @@ print(df_lk_onboarding.columns)
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Usuarios que no son seller tendran rubro 0 en vez de None
+# MAGIC ## Reemplazar habito vacio por 0 
 
 # COMMAND ----------
 
-print("Rubro values in df_lk_users:")
-df_lk_users.select('rubro').distinct().show()
+print("habito values in df_lk_onboarding:")
+df_lk_onboarding.select('habito').distinct().show()
 
-df_lk_users = df_lk_users.withColumn("rubro", when(col("rubro").isNull(), "0").otherwise(col("rubro")))
-df_lk_users = df_lk_users.withColumn("rubro", col("rubro").cast(IntegerType()))
-
+df_lk_onboarding = df_lk_onboarding.withColumn("habito", when(col("habito").isNull(), "0").otherwise(col("habito")))
 df_lk_onboarding = df_lk_onboarding.withColumn("habito", col("habito").cast(IntegerType()))
+df_lk_onboarding.show(10)
 
-df_lk_users.show(10)  
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## Columnas temporales sin flag activo
+
+# COMMAND ----------
+
+df_habito = df_lk_onboarding.filter((col('habito_dt').isNotNull()) & (col('habito') == 0))
+df_activacion = df_lk_onboarding.filter((col('activacion_dt').isNotNull()) & (col('activacion') == 0))
+df_setup = df_lk_onboarding.filter((col('setup_dt').isNotNull()) & (col('setup') == 0))
+df_return = df_lk_onboarding.filter((col('return_dt').isNotNull()) & (col('return') == 0))
+
+print("Rows with habito_dt not null and habito 0:")
+df_habito.show()
+
+print("Rows with activacion_dt not null and activacion 0:")
+df_activacion.show()
+
+print("Rows with setup_dt not null and setup 0:")
+df_setup.show()
+
+print("Rows with return_dt not null and return 0:")
+df_return.show()
+
+print(f"Count before inconsistencies: {df_lk_onboarding.count()}")
+df_lk_onboarding = df_lk_onboarding.subtract(df_habito.union(df_activacion).union(df_setup).union(df_return))
+
+print(f"Count after inconsistencies: {df_lk_onboarding.count()}")
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC # Eliminar usuarios sin first login datetime
+
+# COMMAND ----------
+
+df_lk_onboarding = df_lk_onboarding.filter(col('first_login_dt').isNotNull())
+
+print(f"Filas después de eliminar first_login_dt nulos: {df_lk_onboarding.count()}")
 
 # COMMAND ----------
 
 # MAGIC %md
 # MAGIC # Eliminar inconsistencias (1 en habito 0 en activación)
-# MAGIC TODO: no eliminar, reemplazar 1 por 0 y viceversa
 
 # COMMAND ----------
 
@@ -205,13 +241,44 @@ print(f"Rows without this inconsistency: {df_lk_onboarding.count()}")
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC # Eliminar usuarios sin first login datetime
+# MAGIC # Inconsistencias entre cantidad de transacciones y flags
 
 # COMMAND ----------
 
-df_lk_onboarding = df_lk_onboarding.filter(col('first_login_dt').isNotNull())
+df_lk_onboarding.show()
 
-print(f"Filas después de eliminar first_login_dt nulos: {df_lk_onboarding.count()}")
+# COMMAND ----------
+
+df_bt_users_aggregated = df_bt_users_transactions.groupBy("user_id").agg(count("*").alias("transaction_count"))
+
+df_bt_users_aggregated.show()
+
+df_lk_onboarding.show()
+
+df_lk_onboarding_with_transactions = df_lk_onboarding.join(df_bt_users_aggregated, on="user_id", how="left")
+
+df_lk_onboarding_with_transactions.show()
+
+df_lk_onboarding_with_transactions = df_lk_onboarding_with_transactions.withColumn("transaction_count", when(col("transaction_count").isNull(), "0").otherwise(col("transaction_count")))
+
+df_lk_onboarding_with_transactions.show()
+
+# COMMAND ----------
+
+df_filtered = df_lk_onboarding_with_transactions.filter((col("activacion") == 1) & (col("transaction_count") == 0))
+
+print(f"Amount of rows with activacion but no transaction: {df_filtered.count()}")
+
+df_lk_onboarding = df_lk_onboarding_with_transactions.withColumn(
+    "activacion",
+    when((col("activacion") == 1) & (col("transaction_count") == 0), 0).otherwise(col("activacion"))
+).withColumn(
+    "activacion_dt",
+    when(~((col("activacion_dt").isNotNull()) & (col("transaction_count") == 0)), col("activacion_dt"))
+)
+
+print(f"DataFrame df_lk_onboarding updated:")
+df_lk_onboarding.show()
 
 # COMMAND ----------
 
