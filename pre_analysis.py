@@ -15,14 +15,27 @@ spark = SparkSession.builder.appName("BigData").getOrCreate()
 
 # COMMAND ----------
 
-dbutils.widgets.text("data_folder", "/Workspace/Repos/gbaliarda@itba.edu.ar/databricks-etl/data", "Data Folder")
-data_folder = dbutils.widgets.get("data_folder")
+dbutils.widgets.text("STORAGE_ACCOUNT_KEY", "<STORAGE_ACCOUNT_KEY>", "STORAGE ACCOUNT KEY")
+dbutils.widgets.text("CONTAINER_NAME", "<CONTAINER_NAME>", "BLOB STORAGE CONTAINER NAME")
+dbutils.widgets.text("STORAGE_ACCOUNT_NAME", "<STORAGE_ACCOUNT_NAME>", "BLOB STORAGE ACCOUNT NAME")
+dbutils.widgets.text("TARGET_CONTAINER_NAME", "<TARGET_CONTAINER_NAME>", "BLOB STORAGE TARGET CONTAINER NAME")
 
 # COMMAND ----------
 
-df_bt_users_transactions = spark.read.csv(f"file:{data_folder}/bt_users_transactions.csv", header=True)
-df_lk_onboarding = spark.read.csv(f"file:{data_folder}/lk_onboarding.csv", header=True)
-df_lk_users = spark.read.csv(f"file:{data_folder}/lk_users.csv", header=True)
+storage_account_key = dbutils.widgets.get("STORAGE_ACCOUNT_KEY")
+container_name = dbutils.widgets.get("CONTAINER_NAME")
+storage_account_name = dbutils.widgets.get("STORAGE_ACCOUNT_NAME")
+spark.conf.set(f"fs.azure.account.key.{storage_account_name}.blob.core.windows.net", storage_account_key)
+
+
+data_folder = f"wasbs://{container_name}@{storage_account_name}.blob.core.windows.net/"
+dbutils.fs.ls(f"wasbs://{container_name}@{storage_account_name}.blob.core.windows.net/")
+
+# COMMAND ----------
+
+df_bt_users_transactions = spark.read.csv(f"{data_folder}/bt_users_transactions.csv", header=True)
+df_lk_onboarding = spark.read.csv(f"{data_folder}/lk_onboarding.csv", header=True)
+df_lk_users = spark.read.csv(f"{data_folder}/lk_users.csv", header=True)
 
 # COMMAND ----------
 
@@ -43,7 +56,7 @@ csv_options = {
     "escape": "\"",
 }
 
-df_lk_users = spark.read.csv(f"file:{data_folder}/lk_users.csv", header=True, multiLine=True)
+df_lk_users = spark.read.csv(f"{data_folder}/lk_users.csv", header=True, multiLine=True)
 df_lk_users.show()
 
 # COMMAND ----------
@@ -53,9 +66,9 @@ df_lk_users.show()
 
 # COMMAND ----------
 
-df_bt_users_transactions = spark.read.csv(f"file:{data_folder}/bt_users_transactions.csv", header=True)
-df_lk_onboarding = spark.read.csv(f"file:{data_folder}/lk_onboarding.csv", header=True)
-df_lk_users = spark.read.csv(f"file:{data_folder}/lk_users.csv", header=True, multiLine=True)
+df_bt_users_transactions_copy = df_bt_users_transactions.alias('df_bt_users_transactions_copy')
+df_lk_onboarding_copy = df_lk_onboarding.alias('df_lk_onboarding_copy')
+df_lk_users_copy = df_lk_users.alias('df_lk_users_copy')
 
 # COMMAND ----------
 
@@ -99,15 +112,15 @@ def plot_completeness_percentages(completeness_percentages, title):
 # COMMAND ----------
 
 df_bt_users_transactions_columns = ["_c0", "user_id", "transaction_dt", "type", "segment"]
-completeness_percentages_bt_users_transactions = calculate_completeness_percentages(df_bt_users_transactions, df_bt_users_transactions_columns)
+completeness_percentages_bt_users_transactions = calculate_completeness_percentages(df_bt_users_transactions_copy, df_bt_users_transactions_columns)
 plot_completeness_percentages(completeness_percentages_bt_users_transactions, "User Transactions")
 
 df_lk_onboarding_columns = ["_c0", "Unnamed: 0", "first_login_dt", "week_year", "user_id", "habito", "habito_dt", "activacion", "activacion_dt", "setup", "setup_dt", "return", "return_dt"]
-completeness_percentages_lk_onboarding = calculate_completeness_percentages(df_lk_onboarding, df_lk_onboarding_columns)
+completeness_percentages_lk_onboarding = calculate_completeness_percentages(df_lk_onboarding_copy, df_lk_onboarding_columns)
 plot_completeness_percentages(completeness_percentages_lk_onboarding, "Onboarding")
 
 df_lk_users_columns = ["_c0", "user_id", "name", "email", "address", "birth_dt", "phone", "type", "rubro"]
-completeness_percentages_lk_users = calculate_completeness_percentages(df_lk_users, df_lk_users_columns)
+completeness_percentages_lk_users = calculate_completeness_percentages(df_lk_users_copy, df_lk_users_columns)
 plot_completeness_percentages(completeness_percentages_lk_users, "Users")
 
 # COMMAND ----------
@@ -117,9 +130,9 @@ plot_completeness_percentages(completeness_percentages_lk_users, "Users")
 
 # COMMAND ----------
 
-df_bt_users_transactions = spark.read.csv(f"file:{data_folder}/bt_users_transactions.csv", header=True)
-df_lk_onboarding = spark.read.csv(f"file:{data_folder}/lk_onboarding.csv", header=True)
-df_lk_users = spark.read.csv(f"file:{data_folder}/lk_users.csv", header=True, multiLine=True)
+df_bt_users_transactions_copy = df_bt_users_transactions.alias('df_bt_users_transactions_copy')
+df_lk_onboarding_copy = df_lk_onboarding.alias('df_lk_onboarding_copy')
+df_lk_users_copy = df_lk_users.alias('df_lk_users_copy')
 
 # COMMAND ----------
 
@@ -141,9 +154,9 @@ df_bt_users_transactions_columns = ["_c0", "user_id"]
 df_lk_onboarding_columns = ["_c0", "user_id"]
 df_lk_users_columns = ["_c0", "user_id"]
 
-percentages_bt_users_transactions = calculate_uniqueness_percentage(df_bt_users_transactions, df_bt_users_transactions_columns)
-percentages_lk_onboarding = calculate_uniqueness_percentage(df_lk_onboarding, df_lk_onboarding_columns)
-percentages_lk_users = calculate_uniqueness_percentage(df_lk_users, df_lk_users_columns)
+percentages_bt_users_transactions = calculate_uniqueness_percentage(df_bt_users_transactions_copy, df_bt_users_transactions_columns)
+percentages_lk_onboarding = calculate_uniqueness_percentage(df_lk_onboarding_copy, df_lk_onboarding_columns)
+percentages_lk_users = calculate_uniqueness_percentage(df_lk_users_copy, df_lk_users_columns)
 
 # COMMAND ----------
 
@@ -183,14 +196,14 @@ plt.show()
 
 # COMMAND ----------
 
-duplicated_user_ids = df_lk_onboarding.groupBy("user_id").agg(count("user_id").alias("count")).filter(col("count") > 1).select("user_id")
+duplicated_user_ids = df_lk_onboarding_copy.groupBy("user_id").agg(count("user_id").alias("count")).filter(col("count") > 1).select("user_id")
 
-duplicated_rows = df_lk_onboarding.join(duplicated_user_ids, on="user_id", how="inner")
+duplicated_rows = df_lk_onboarding_copy.join(duplicated_user_ids, on="user_id", how="inner")
 
 duplicated_rows.show(truncate=False)
 
 user_id_to_filter = ["MLB10618286450", "MLB3751318220"]
-filtered_df = df_lk_onboarding.filter(col("user_id").isin(user_id_to_filter)).sort("user_id")
+filtered_df = df_lk_onboarding_copy.filter(col("user_id").isin(user_id_to_filter)).sort("user_id")
 filtered_df.show(truncate=False)
 
 
@@ -201,9 +214,9 @@ filtered_df.show(truncate=False)
 
 # COMMAND ----------
 
-df_bt_users_transactions = spark.read.csv(f"file:{data_folder}/bt_users_transactions.csv", header=True)
-df_lk_onboarding = spark.read.csv(f"file:{data_folder}/lk_onboarding.csv", header=True)
-df_lk_users = spark.read.csv(f"file:{data_folder}/lk_users.csv", header=True, multiLine=True)
+df_bt_users_transactions_copy = df_bt_users_transactions.alias('df_bt_users_transactions_copy')
+df_lk_onboarding_copy = df_lk_onboarding.alias('df_lk_onboarding_copy')
+df_lk_users_copy = df_lk_users.alias('df_lk_users_copy')
 
 # COMMAND ----------
 
@@ -347,9 +360,9 @@ validation_functions = {
 
 # COMMAND ----------
 
-generate_validation_plots(df_bt_users_transactions, "df_bt_users_transactions")
-generate_validation_plots(df_lk_onboarding, "df_lk_onboarding")
-generate_validation_plots(df_lk_users, "df_lk_users")
+generate_validation_plots(df_bt_users_transactions_copy, "df_bt_users_transactions")
+generate_validation_plots(df_lk_onboarding_copy, "df_lk_onboarding")
+generate_validation_plots(df_lk_users_copy, "df_lk_users")
 
 # COMMAND ----------
 
@@ -358,8 +371,8 @@ generate_validation_plots(df_lk_users, "df_lk_users")
 
 # COMMAND ----------
 
-df_bt_users_aggregated = df_bt_users_transactions.groupBy("user_id").agg(count("*").alias("transaction_count"))
-df_lk_onboarding_with_transactions = df_lk_onboarding.join(df_bt_users_aggregated, on="user_id", how="left")
+df_bt_users_aggregated = df_bt_users_transactions_copy.groupBy("user_id").agg(count("*").alias("transaction_count"))
+df_lk_onboarding_with_transactions = df_lk_onboarding_copy.join(df_bt_users_aggregated, on="user_id", how="left")
 
 df_lk_onboarding_with_transactions = df_lk_onboarding_with_transactions.withColumn("transaction_count", when(col("transaction_count").isNull(), "0").otherwise(col("transaction_count")))
 
@@ -412,9 +425,9 @@ plt.show()
 
 # COMMAND ----------
 
-df_bt_users_transactions = spark.read.csv(f"file:{data_folder}/bt_users_transactions.csv", header=True)
-df_lk_onboarding = spark.read.csv(f"file:{data_folder}/lk_onboarding.csv", header=True)
-df_lk_users = spark.read.csv(f"file:{data_folder}/lk_users.csv", header=True, multiLine=True)
+df_bt_users_transactions_copy = df_bt_users_transactions.alias('df_bt_users_transactions_copy')
+df_lk_onboarding_copy = df_lk_onboarding.alias('df_lk_onboarding_copy')
+df_lk_users_copy = df_lk_users.alias('df_lk_users_copy')
 
 # COMMAND ----------
 
@@ -427,9 +440,9 @@ total_unique_user_ids = (
     .count()
 )
 
-unique_user_ids_bt = df_bt_users_transactions.select("user_id").distinct().count()
-unique_user_ids_onboarding = df_lk_onboarding.select("user_id").distinct().count()
-unique_user_ids_lk_users = df_lk_users.select("user_id").distinct().count()
+unique_user_ids_bt = df_bt_users_transactions_copy.select("user_id").distinct().count()
+unique_user_ids_onboarding = df_lk_onboarding_copy.select("user_id").distinct().count()
+unique_user_ids_lk_users = df_lk_users_copy.select("user_id").distinct().count()
 
 # COMMAND ----------
 
@@ -466,9 +479,9 @@ plt.show()
 
 # COMMAND ----------
 
-df_bt_users_transactions = spark.read.csv(f"file:{data_folder}/bt_users_transactions.csv", header=True)
-df_lk_onboarding = spark.read.csv(f"file:{data_folder}/lk_onboarding.csv", header=True)
-df_lk_users = spark.read.csv(f"file:{data_folder}/lk_users.csv", header=True, multiLine=True)
+df_bt_users_transactions_copy = df_bt_users_transactions.alias('df_bt_users_transactions_copy')
+df_lk_onboarding_copy = df_lk_onboarding.alias('df_lk_onboarding_copy')
+df_lk_users_copy = df_lk_users.alias('df_lk_users_copy')
 
 # COMMAND ----------
 
@@ -477,7 +490,7 @@ df_lk_users = spark.read.csv(f"file:{data_folder}/lk_users.csv", header=True, mu
 
 # COMMAND ----------
 
-rubro_data = df_lk_users.filter(df_lk_users["rubro"].isNotNull()).select("rubro").toPandas()
+rubro_data = df_lk_users_copy.filter(df_lk_users_copy["rubro"].isNotNull()).select("rubro").toPandas()
 
 plt.figure(figsize=(10, 6))
 sns.histplot(rubro_data["rubro"], bins=20, kde=True)
@@ -493,7 +506,7 @@ plt.show()
 
 # COMMAND ----------
 
-type_data = df_bt_users_transactions.filter(df_bt_users_transactions["type"].isNotNull()).select("type").toPandas()
+type_data = df_bt_users_transactions_copy.filter(df_bt_users_transactions_copy["type"].isNotNull()).select("type").toPandas()
 
 plt.figure(figsize=(8, 6))
 sns.histplot(type_data["type"], bins=9, kde=True)
@@ -504,7 +517,7 @@ plt.show()
 
 # COMMAND ----------
 
-segment_counts = df_bt_users_transactions.groupBy("segment").count().toPandas()
+segment_counts = df_bt_users_transactions_copy.groupBy("segment").count().toPandas()
 
 plt.figure(figsize=(8, 6))
 sns.barplot(x="segment", y="count", data=segment_counts)
@@ -515,7 +528,7 @@ plt.show()
 
 # COMMAND ----------
 
-onboarding_data = df_lk_onboarding.select("habito", "activacion", "setup", "return").toPandas()
+onboarding_data = df_lk_onboarding_copy.select("habito", "activacion", "setup", "return").toPandas()
 
 habit_data = onboarding_data["habito"].value_counts().sort_index()
 activation_data = onboarding_data["activacion"].value_counts().sort_index()
@@ -582,7 +595,7 @@ plt.show()
 
 # COMMAND ----------
 
-week_year_data = df_lk_onboarding.filter(df_lk_onboarding["week_year"].isNotNull()).select("week_year").toPandas()
+week_year_data = df_lk_onboarding_copy.filter(df_lk_onboarding_copy["week_year"].isNotNull()).select("week_year").toPandas()
 
 plt.figure(figsize=(12, 6))
 sns.histplot(week_year_data["week_year"], bins=52, kde=False)
@@ -595,7 +608,7 @@ plt.show()
 
 date_columns = ["first_login_dt", "habito_dt", "activacion_dt", "setup_dt"]
 
-date_counts = {col_name: df_lk_onboarding.select(to_timestamp(col(col_name)).alias(col_name))
+date_counts = {col_name: df_lk_onboarding_copy.select(to_timestamp(col(col_name)).alias(col_name))
                .filter(col(col_name).isNotNull())
                .groupBy(col_name)
                .count()
@@ -621,43 +634,23 @@ plt.show()
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC # Analisis temporales
-
-# COMMAND ----------
-
-df_bt_users_transactions = spark.read.csv(f"file:{data_folder}/bt_users_transactions.csv", header=True)
-df_lk_onboarding = spark.read.csv(f"file:{data_folder}/lk_onboarding.csv", header=True)
-df_lk_users = spark.read.csv(f"file:{data_folder}/lk_users.csv", header=True, multiLine=True)
-
-# COMMAND ----------
-
-df = df_bt_users_transactions.alias('df_bt') \
-    .join(df_lk_onboarding.alias('df_lk_onboarding'), col('df_bt.user_id') == col('df_lk_onboarding.user_id'), 'inner') \
-    .join(df_lk_users.alias('df_lk_users'), col('df_bt.user_id') == col('df_lk_users.user_id'), 'inner') \
-    .select('df_bt.*', 'df_lk_onboarding.*', 'df_lk_users.*')
-
-df.show()
-
-# COMMAND ----------
-
-# MAGIC %md
 # MAGIC # Analisis de correlacion
 
 # COMMAND ----------
 
-df_bt_users_transactions = spark.read.csv(f"file:{data_folder}/bt_users_transactions.csv", header=True)
-df_lk_onboarding = spark.read.csv(f"file:{data_folder}/lk_onboarding.csv", header=True)
-df_lk_users = spark.read.csv(f"file:{data_folder}/lk_users.csv", header=True, multiLine=True)
+df_bt_users_transactions_copy = df_bt_users_transactions.alias('df_bt_users_transactions_copy')
+df_lk_onboarding_copy = df_lk_onboarding.alias('df_lk_onboarding_copy')
+df_lk_users_copy = df_lk_users.alias('df_lk_users_copy')
 
 # COMMAND ----------
 
-df_bt_users_transactions = df_bt_users_transactions.withColumn("transaction_dt_cast", unix_timestamp(to_date("transaction_dt")))
-df_bt_users_transactions = df_bt_users_transactions.withColumn("bt_users_transactions_type_cast", df_bt_users_transactions["type"].cast(IntegerType()))
-df_bt_users_transactions = df_bt_users_transactions.withColumn("segment_cast", df_bt_users_transactions["segment"].cast(FloatType()))
+df_bt_users_transactions_copy = df_bt_users_transactions_copy.withColumn("transaction_dt_cast", unix_timestamp(to_date("transaction_dt")))
+df_bt_users_transactions_copy = df_bt_users_transactions_copy.withColumn("bt_users_transactions_type_cast", df_bt_users_transactions_copy["type"].cast(IntegerType()))
+df_bt_users_transactions_copy = df_bt_users_transactions_copy.withColumn("segment_cast", df_bt_users_transactions_copy["segment"].cast(FloatType()))
 
 df_bt_columns_to_correlate = ["transaction_dt_cast", "bt_users_transactions_type_cast", "segment_cast"]
 
-df_bt_correlation_matrix = df_bt_users_transactions.select(df_bt_columns_to_correlate).toPandas().corr(numeric_only=False)
+df_bt_correlation_matrix = df_bt_users_transactions_copy.select(df_bt_columns_to_correlate).toPandas().corr(numeric_only=False)
 
 plt.figure(figsize=(10, 8))
 sns.heatmap(df_bt_correlation_matrix, annot=True, cmap='coolwarm', fmt=".2f", annot_kws={"size": 10})
@@ -666,23 +659,23 @@ plt.show()
 
 # COMMAND ----------
 
-df_lk_onboarding = df_lk_onboarding.withColumn("first_login_dt_cast", unix_timestamp(to_date("first_login_dt")).cast("double"))
-df_lk_onboarding = df_lk_onboarding.withColumn("habito_dt_cast", unix_timestamp(to_date("habito_dt")).cast("double"))
-df_lk_onboarding = df_lk_onboarding.withColumn("activacion_dt_cast", unix_timestamp(to_date("activacion_dt")).cast("double"))
-df_lk_onboarding = df_lk_onboarding.withColumn("return_dt_cast", unix_timestamp(to_date("return_dt")).cast("double"))
-df_lk_onboarding = df_lk_onboarding.withColumn("Unnamed_0_cast", df_lk_onboarding["Unnamed: 0"].cast(IntegerType()))
-df_lk_onboarding = df_lk_onboarding.withColumn("week_year_cast", df_lk_onboarding["week_year"].cast(IntegerType()))
-df_lk_onboarding = df_lk_onboarding.withColumn("habito_cast", df_lk_onboarding["habito"].cast(IntegerType()))
-df_lk_onboarding = df_lk_onboarding.withColumn("activacion_cast", df_lk_onboarding["activacion"].cast(IntegerType()))
-df_lk_onboarding = df_lk_onboarding.withColumn("setup_cast", df_lk_onboarding["setup"].cast(IntegerType()))
-df_lk_onboarding = df_lk_onboarding.withColumn("return_cast", df_lk_onboarding["return"].cast(IntegerType()))
+df_lk_onboarding_copy = df_lk_onboarding_copy.withColumn("first_login_dt_cast", unix_timestamp(to_date("first_login_dt")).cast("double"))
+df_lk_onboarding_copy = df_lk_onboarding_copy.withColumn("habito_dt_cast", unix_timestamp(to_date("habito_dt")).cast("double"))
+df_lk_onboarding_copy = df_lk_onboarding_copy.withColumn("activacion_dt_cast", unix_timestamp(to_date("activacion_dt")).cast("double"))
+df_lk_onboarding_copy = df_lk_onboarding_copy.withColumn("return_dt_cast", unix_timestamp(to_date("return_dt")).cast("double"))
+df_lk_onboarding_copy = df_lk_onboarding_copy.withColumn("Unnamed_0_cast", df_lk_onboarding_copy["Unnamed: 0"].cast(IntegerType()))
+df_lk_onboarding_copy = df_lk_onboarding_copy.withColumn("week_year_cast", df_lk_onboarding_copy["week_year"].cast(IntegerType()))
+df_lk_onboarding_copy = df_lk_onboarding_copy.withColumn("habito_cast", df_lk_onboarding_copy["habito"].cast(IntegerType()))
+df_lk_onboarding_copy = df_lk_onboarding_copy.withColumn("activacion_cast", df_lk_onboarding_copy["activacion"].cast(IntegerType()))
+df_lk_onboarding_copy = df_lk_onboarding_copy.withColumn("setup_cast", df_lk_onboarding_copy["setup"].cast(IntegerType()))
+df_lk_onboarding_copy = df_lk_onboarding_copy.withColumn("return_cast", df_lk_onboarding_copy["return"].cast(IntegerType()))
 
 df_lk_onboarding_columns_to_correlate = [
     "first_login_dt_cast", "habito_dt_cast", "activacion_dt_cast", "return_dt_cast",
     "Unnamed_0_cast", "week_year_cast", "habito_cast", "activacion_cast", "setup_cast", "return_cast"
 ]
 
-df_lk_onboarding_correlation_matrix = df_lk_onboarding.select(df_lk_onboarding_columns_to_correlate).toPandas().corr()
+df_lk_onboarding_correlation_matrix = df_lk_onboarding_copy.select(df_lk_onboarding_columns_to_correlate).toPandas().corr()
 
 plt.figure(figsize=(10, 8))
 sns.heatmap(df_lk_onboarding_correlation_matrix, annot=True, cmap='coolwarm', fmt=".2f", annot_kws={"size": 10})
@@ -691,13 +684,13 @@ plt.show()
 
 # COMMAND ----------
 
-df_lk_users = df_lk_users.withColumn("birth_dt_cast", unix_timestamp(to_date("birth_dt")).cast("double"))
-df_lk_users = df_lk_users.withColumn("lk_users_type_cast", df_lk_users["type"].cast(IntegerType()))
-df_lk_users = df_lk_users.withColumn("rubro_cast", df_lk_users["rubro"].cast(FloatType()))
+df_lk_users_copy = df_lk_users_copy.withColumn("birth_dt_cast", unix_timestamp(to_date("birth_dt")).cast("double"))
+df_lk_users_copy = df_lk_users_copy.withColumn("lk_users_type_cast", df_lk_users_copy["type"].cast(IntegerType()))
+df_lk_users_copy = df_lk_users_copy.withColumn("rubro_cast", df_lk_users_copy["rubro"].cast(FloatType()))
 
 df_lk_users_columns_to_correlate = ["birth_dt_cast", "lk_users_type_cast", "rubro_cast"]
 
-df_lk_users_correlation_matrix = df_lk_users.select(df_lk_users_columns_to_correlate).toPandas().corr()
+df_lk_users_correlation_matrix = df_lk_users_copy.select(df_lk_users_columns_to_correlate).toPandas().corr()
 
 plt.figure(figsize=(10, 8))
 sns.heatmap(df_lk_users_correlation_matrix, annot=True, cmap='coolwarm', fmt=".2f", annot_kws={"size": 10})
@@ -706,9 +699,9 @@ plt.show()
 
 # COMMAND ----------
 
-df = df_bt_users_transactions.alias('df_bt') \
-    .join(df_lk_onboarding.alias('df_lk_onboarding'), col('df_bt.user_id') == col('df_lk_onboarding.user_id'), 'inner') \
-    .join(df_lk_users.alias('df_lk_users'), col('df_bt.user_id') == col('df_lk_users.user_id'), 'inner') \
+df = df_bt_users_transactions_copy.alias('df_bt') \
+    .join(df_lk_onboarding_copy.alias('df_lk_onboarding'), col('df_bt.user_id') == col('df_lk_onboarding.user_id'), 'inner') \
+    .join(df_lk_users_copy.alias('df_lk_users'), col('df_bt.user_id') == col('df_lk_users.user_id'), 'inner') \
     .select('df_bt.*', 'df_lk_onboarding.*', 'df_lk_users.*')
 
 # COMMAND ----------
@@ -729,29 +722,29 @@ plt.show()
 
 # COMMAND ----------
 
-df_bt_users_transactions = spark.read.csv(f"file:{data_folder}/bt_users_transactions.csv", header=True)
-df_lk_onboarding = spark.read.csv(f"file:{data_folder}/lk_onboarding.csv", header=True)
-df_lk_users = spark.read.csv(f"file:{data_folder}/lk_users.csv", header=True, multiLine=True)
+df_bt_users_transactions_copy = df_bt_users_transactions.alias('df_bt_users_transactions_copy')
+df_lk_onboarding_copy = df_lk_onboarding.alias('df_lk_onboarding_copy')
+df_lk_users_copy = df_lk_users.alias('df_lk_users_copy')
 
 # COMMAND ----------
 
-df_bt_users_transactions = df_bt_users_transactions \
+df_bt_users_transactions_copy = df_bt_users_transactions_copy \
     .withColumn("transaction_dt", to_date(col("transaction_dt"), "yyyy-MM-dd"))
 
-df_lk_onboarding = df_lk_onboarding \
+df_lk_onboarding_copy = df_lk_onboarding_copy \
     .withColumn("first_login_dt", to_date(col("first_login_dt"), "yyyy-MM-dd")) \
     .withColumn("habito_dt", to_date(col("habito_dt"), "yyyy-MM-dd")) \
     .withColumn("activacion_dt", to_date(col("activacion_dt"), "yyyy-MM-dd")) \
     .withColumn("return_dt", to_date(col("return_dt"), "yyyy-MM-dd"))
 
-df_lk_users = df_lk_users \
+df_lk_users_copy = df_lk_users_copy \
     .withColumn("birth_dt", to_date(col("birth_dt"), "yyyy-MM-dd"))
 
-df_bt_users_transactions = df_bt_users_transactions \
+df_bt_users_transactions_copy = df_bt_users_transactions_copy \
     .withColumn("type", col("type").cast(IntegerType())) \
     .withColumn("segment", col("segment").cast(IntegerType()))
 
-df_lk_onboarding = df_lk_onboarding \
+df_lk_onboarding_copy = df_lk_onboarding_copy \
     .withColumn("Unnamed: 0", col("Unnamed: 0").cast(IntegerType())) \
     .withColumn("week_year", col("week_year").cast(IntegerType())) \
     .withColumn("habito", col("habito").cast(FloatType())) \
@@ -759,7 +752,7 @@ df_lk_onboarding = df_lk_onboarding \
     .withColumn("setup", col("setup").cast(FloatType())) \
     .withColumn("return", col("return").cast(FloatType()))
 
-df_lk_users = df_lk_users \
+df_lk_users_copy = df_lk_users_copy \
     .withColumn("type", col("type").cast(IntegerType())) \
     .withColumn("rubro", col("rubro").cast(IntegerType()))
 
@@ -769,15 +762,15 @@ numeric_columns_bt = ["type", "segment"]
 numeric_columns_lk_onboarding = ["week_year", "habito", "activacion", "setup", "return"]
 numeric_columns_lk_users = ["type", "rubro"]
 
-stats_bt = df_bt_users_transactions.select(numeric_columns_bt).describe().show()
-stats_lk_onboarding = df_lk_onboarding.select(numeric_columns_lk_onboarding).describe().show()
-stats_lk_users = df_lk_users.select(numeric_columns_lk_users).describe().show()
+stats_bt = df_bt_users_transactions_copy.select(numeric_columns_bt).describe().show()
+stats_lk_onboarding = df_lk_onboarding_copy.select(numeric_columns_lk_onboarding).describe().show()
+stats_lk_users = df_lk_users_copy.select(numeric_columns_lk_users).describe().show()
 
 # COMMAND ----------
 
-df_bt_users_transactions_pd = df_bt_users_transactions.select(numeric_columns_bt).toPandas()
-df_lk_onboarding_pd = df_lk_onboarding.select(numeric_columns_lk_onboarding).toPandas()
-df_lk_users_pd = df_lk_users.select(numeric_columns_lk_users).toPandas()
+df_bt_users_transactions_pd = df_bt_users_transactions_copy.select(numeric_columns_bt).toPandas()
+df_lk_onboarding_pd = df_lk_onboarding_copy.select(numeric_columns_lk_onboarding).toPandas()
+df_lk_users_pd = df_lk_users_copy.select(numeric_columns_lk_users).toPandas()
 
 fig, axs = plt.subplots(3, 1, figsize=(12, 18))
 
