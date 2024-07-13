@@ -11,6 +11,10 @@
 			"type": "secureString",
 			"metadata": "Secure string for 'accessToken' of 'Preprocess'"
 		},
+		"Transform_accessToken": {
+			"type": "secureString",
+			"metadata": "Secure string for 'accessToken' of 'Transform'"
+		},
 		"bsinput_connectionString": {
 			"type": "secureString",
 			"metadata": "Secure string for 'connectionString' of 'bsinput'"
@@ -18,16 +22,141 @@
 		"bsoutput_connectionString": {
 			"type": "secureString",
 			"metadata": "Secure string for 'connectionString' of 'bsoutput'"
-		},
-		"Transform_accessToken": {
-			"type": "secureString",
-			"metadata": "Secure string for 'accessToken' of 'Transform'"
 		}
 	},
 	"variables": {
 		"factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
 	},
 	"resources": [
+		{
+			"name": "[concat(parameters('factoryName'), '/pipeline1')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "pre_process",
+						"type": "DatabricksNotebook",
+						"dependsOn": [
+							{
+								"activity": "Set Target Container Name",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							},
+							{
+								"activity": "Set Container Name",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							},
+							{
+								"activity": "Set Storage Account Name",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"notebookPath": "/Repos/vyeli@itba.edu.ar/databricks-etl/pre_process",
+							"baseParameters": {
+								"STORAGE_ACCOUNT_NAME": {
+									"value": "@variables('STORAGE_ACCOUNT_NAME')",
+									"type": "Expression"
+								},
+								"CONTAINER_NAME": {
+									"value": "@variables('CONTAINER_NAME')",
+									"type": "Expression"
+								},
+								"TARGET_CONTAINER_NAME": {
+									"value": "@variables('TARGET_CONTAINER_NAME')",
+									"type": "Expression"
+								}
+							},
+							"libraries": [
+								{
+									"pypi": {
+										"package": "azure-storage-blob"
+									}
+								}
+							]
+						},
+						"linkedServiceName": {
+							"referenceName": "Preprocess",
+							"type": "LinkedServiceReference"
+						}
+					},
+					{
+						"name": "Set Storage Account Name",
+						"type": "SetVariable",
+						"dependsOn": [],
+						"policy": {
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"variableName": "STORAGE_ACCOUNT_NAME",
+							"value": "bsdataflow"
+						}
+					},
+					{
+						"name": "Set Container Name",
+						"type": "SetVariable",
+						"dependsOn": [],
+						"policy": {
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"variableName": "CONTAINER_NAME",
+							"value": "input"
+						}
+					},
+					{
+						"name": "Set Target Container Name",
+						"type": "SetVariable",
+						"dependsOn": [],
+						"policy": {
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"variableName": "TARGET_CONTAINER_NAME",
+							"value": "output"
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"variables": {
+					"CONTAINER_NAME": {
+						"type": "String"
+					},
+					"STORAGE_ACCOUNT_NAME": {
+						"type": "String"
+					},
+					"TARGET_CONTAINER_NAME": {
+						"type": "String"
+					}
+				},
+				"annotations": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/Preprocess')]"
+			]
+		},
 		{
 			"name": "[concat(parameters('factoryName'), '/ds_input_onboarding')]",
 			"type": "Microsoft.DataFactory/factories/datasets",
@@ -213,6 +342,31 @@
 			"dependsOn": []
 		},
 		{
+			"name": "[concat(parameters('factoryName'), '/Transform')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureDatabricks",
+				"typeProperties": {
+					"domain": "https://adb-4139596699578409.9.azuredatabricks.net",
+					"accessToken": {
+						"type": "SecureString",
+						"value": "[parameters('Transform_accessToken')]"
+					},
+					"newClusterNodeType": "Standard_DS3_v2",
+					"newClusterNumOfWorker": "1",
+					"newClusterSparkEnvVars": {
+						"PYSPARK_PYTHON": "/databricks/python3/bin/python3"
+					},
+					"newClusterVersion": "15.3.x-scala2.12",
+					"clusterOption": "Fixed",
+					"newClusterInitScripts": []
+				}
+			},
+			"dependsOn": []
+		},
+		{
 			"name": "[concat(parameters('factoryName'), '/bsinput')]",
 			"type": "Microsoft.DataFactory/factories/linkedServices",
 			"apiVersion": "2018-06-01",
@@ -234,169 +388,6 @@
 				"type": "AzureBlobStorage",
 				"typeProperties": {
 					"connectionString": "[parameters('bsoutput_connectionString')]"
-				}
-			},
-			"dependsOn": []
-		},
-		{
-			"name": "[concat(parameters('factoryName'), '/pipeline1')]",
-			"type": "Microsoft.DataFactory/factories/pipelines",
-			"apiVersion": "2018-06-01",
-			"properties": {
-				"activities": [
-					{
-						"name": "pre_process",
-						"type": "DatabricksNotebook",
-						"dependsOn": [
-							{
-								"activity": "Set Target Container Name",
-								"dependencyConditions": [
-									"Succeeded"
-								]
-							},
-							{
-								"activity": "Set Container Name",
-								"dependencyConditions": [
-									"Succeeded"
-								]
-							},
-							{
-								"activity": "Set Storage Account Name",
-								"dependencyConditions": [
-									"Succeeded"
-								]
-							}
-						],
-						"policy": {
-							"timeout": "0.12:00:00",
-							"retry": 0,
-							"retryIntervalInSeconds": 30,
-							"secureOutput": false,
-							"secureInput": false
-						},
-						"userProperties": [
-							{}
-						],
-						"typeProperties": {
-							"notebookPath": "/Repos/vyeli@itba.edu.ar/databricks-etl/pre_process",
-							"baseParameters": {
-								"STORAGE_ACCOUNT_KEY": {
-									"value": "@variables('STORAGE_ACCOUNT_KEY')",
-									"type": "Expression"
-								},
-								"STORAGE_ACCOUNT_NAME": {
-									"value": "@variables('STORAGE_ACCOUNT_NAME')",
-									"type": "Expression"
-								},
-								"CONTAINER_NAME": {
-									"value": "@variables('CONTAINER_NAME')",
-									"type": "Expression"
-								},
-								"TARGET_CONTAINER_NAME": {
-									"value": "@variables('TARGET_CONTAINER_NAME')",
-									"type": "Expression"
-								}
-							},
-							"libraries": [
-								{
-									"pypi": {
-										"package": "azure-storage-blob"
-									}
-								}
-							]
-						},
-						"linkedServiceName": {
-							"referenceName": "Preprocess",
-							"type": "LinkedServiceReference"
-						}
-					},
-					{
-						"name": "Set Storage Account Name",
-						"type": "SetVariable",
-						"dependsOn": [],
-						"policy": {
-							"secureOutput": false,
-							"secureInput": false
-						},
-						"userProperties": [],
-						"typeProperties": {
-							"variableName": "STORAGE_ACCOUNT_NAME",
-							"value": "bsdataflow"
-						}
-					},
-					{
-						"name": "Set Container Name",
-						"type": "SetVariable",
-						"dependsOn": [],
-						"policy": {
-							"secureOutput": false,
-							"secureInput": false
-						},
-						"userProperties": [],
-						"typeProperties": {
-							"variableName": "CONTAINER_NAME",
-							"value": "input"
-						}
-					},
-					{
-						"name": "Set Target Container Name",
-						"type": "SetVariable",
-						"dependsOn": [],
-						"policy": {
-							"secureOutput": false,
-							"secureInput": false
-						},
-						"userProperties": [],
-						"typeProperties": {
-							"variableName": "TARGET_CONTAINER_NAME",
-							"value": "output"
-						}
-					}
-				],
-				"policy": {
-					"elapsedTimeMetric": {}
-				},
-				"variables": {
-					"STORAGE_ACCOUNT_KEY": {
-						"type": "String"
-					},
-					"CONTAINER_NAME": {
-						"type": "String"
-					},
-					"STORAGE_ACCOUNT_NAME": {
-						"type": "String"
-					},
-					"TARGET_CONTAINER_NAME": {
-						"type": "String"
-					}
-				},
-				"annotations": []
-			},
-			"dependsOn": [
-				"[concat(variables('factoryId'), '/linkedServices/Preprocess')]"
-			]
-		},
-		{
-			"name": "[concat(parameters('factoryName'), '/Transform')]",
-			"type": "Microsoft.DataFactory/factories/linkedServices",
-			"apiVersion": "2018-06-01",
-			"properties": {
-				"annotations": [],
-				"type": "AzureDatabricks",
-				"typeProperties": {
-					"domain": "https://adb-4139596699578409.9.azuredatabricks.net",
-					"accessToken": {
-						"type": "SecureString",
-						"value": "[parameters('Transform_accessToken')]"
-					},
-					"newClusterNodeType": "Standard_DS3_v2",
-					"newClusterNumOfWorker": "1",
-					"newClusterSparkEnvVars": {
-						"PYSPARK_PYTHON": "/databricks/python3/bin/python3"
-					},
-					"newClusterVersion": "15.3.x-scala2.12",
-					"clusterOption": "Fixed",
-					"newClusterInitScripts": []
 				}
 			},
 			"dependsOn": []

@@ -11,6 +11,10 @@
 			"type": "secureString",
 			"metadata": "Secure string for 'accessToken' of 'Preprocess'"
 		},
+		"Transform_accessToken": {
+			"type": "secureString",
+			"metadata": "Secure string for 'accessToken' of 'Transform'"
+		},
 		"bsinput_connectionString": {
 			"type": "secureString",
 			"metadata": "Secure string for 'connectionString' of 'bsinput'"
@@ -18,10 +22,6 @@
 		"bsoutput_connectionString": {
 			"type": "secureString",
 			"metadata": "Secure string for 'connectionString' of 'bsoutput'"
-		},
-		"Transform_accessToken": {
-			"type": "secureString",
-			"metadata": "Secure string for 'accessToken' of 'Transform'"
 		},
 		"containerUri": {
 			"type": "string",
@@ -53,14 +53,14 @@
 					"Preprocess_accessToken": {
 						"value": "[parameters('Preprocess_accessToken')]"
 					},
+					"Transform_accessToken": {
+						"value": "[parameters('Transform_accessToken')]"
+					},
 					"bsinput_connectionString": {
 						"value": "[parameters('bsinput_connectionString')]"
 					},
 					"bsoutput_connectionString": {
 						"value": "[parameters('bsoutput_connectionString')]"
-					},
-					"Transform_accessToken": {
-						"value": "[parameters('Transform_accessToken')]"
 					}
 				}
 			},

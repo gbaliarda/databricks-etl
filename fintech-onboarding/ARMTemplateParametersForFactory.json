@@ -8,13 +8,13 @@
 		"Preprocess_accessToken": {
 			"value": ""
 		},
+		"Transform_accessToken": {
+			"value": ""
+		},
 		"bsinput_connectionString": {
 			"value": ""
 		},
 		"bsoutput_connectionString": {
-			"value": ""
-		},
-		"Transform_accessToken": {
 			"value": ""
 		}
 	}
