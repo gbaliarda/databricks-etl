@@ -13,12 +13,6 @@
 						]
 					},
 					{
-						"activity": "Set Storage Account Key",
-						"dependencyConditions": [
-							"Succeeded"
-						]
-					},
-					{
 						"activity": "Set Container Name",
 						"dependencyConditions": [
 							"Succeeded"
@@ -97,20 +91,6 @@
 				"typeProperties": {
 					"variableName": "CONTAINER_NAME",
 					"value": "input"
-				}
-			},
-			{
-				"name": "Set Storage Account Key",
-				"type": "SetVariable",
-				"dependsOn": [],
-				"policy": {
-					"secureOutput": false,
-					"secureInput": false
-				},
-				"userProperties": [],
-				"typeProperties": {
-					"variableName": "STORAGE_ACCOUNT_KEY",
-					"value": ""
 				}
 			},
 			{
