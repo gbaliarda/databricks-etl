@@ -289,7 +289,7 @@
 						},
 						"userProperties": [],
 						"typeProperties": {
-							"variableName": "CONTAINER_NAME",
+							"variableName": "PROCESSED_CONTAINER_NAME",
 							"value": "output"
 						}
 					}
