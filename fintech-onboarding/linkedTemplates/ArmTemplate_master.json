@@ -1,0 +1,70 @@
+{
+	"$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"type": "string",
+			"metadata": "Data Factory name",
+			"defaultValue": "fintech-onboarding"
+		},
+		"Preprocess_accessToken": {
+			"type": "secureString",
+			"metadata": "Secure string for 'accessToken' of 'Preprocess'"
+		},
+		"bsinput_connectionString": {
+			"type": "secureString",
+			"metadata": "Secure string for 'connectionString' of 'bsinput'"
+		},
+		"bsoutput_connectionString": {
+			"type": "secureString",
+			"metadata": "Secure string for 'connectionString' of 'bsoutput'"
+		},
+		"Transform_accessToken": {
+			"type": "secureString",
+			"metadata": "Secure string for 'accessToken' of 'Transform'"
+		},
+		"containerUri": {
+			"type": "string",
+			"metadata": "URI to storage account containing linked ARM templates"
+		},
+		"containerSasToken": {
+			"type": "string",
+			"metadata": "Sas token to storage account containing linked ARM templates"
+		}
+	},
+	"variables": {
+		"factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
+	},
+	"resources": [
+		{
+			"name": "fintech-onboarding_ArmTemplate_0",
+			"type": "Microsoft.Resources/deployments",
+			"apiVersion": "2018-02-01",
+			"properties": {
+				"mode": "incremental",
+				"templateLink": {
+					"uri": "[concat(parameters('containerUri'), '/ArmTemplate_0.json', parameters('containerSasToken'))]",
+					"contentVersion": "1.0.0.0"
+				},
+				"parameters": {
+					"factoryName": {
+						"value": "[parameters('factoryName')]"
+					},
+					"Preprocess_accessToken": {
+						"value": "[parameters('Preprocess_accessToken')]"
+					},
+					"bsinput_connectionString": {
+						"value": "[parameters('bsinput_connectionString')]"
+					},
+					"bsoutput_connectionString": {
+						"value": "[parameters('bsoutput_connectionString')]"
+					},
+					"Transform_accessToken": {
+						"value": "[parameters('Transform_accessToken')]"
+					}
+				}
+			},
+			"dependsOn": []
+		}
+	]
+}
