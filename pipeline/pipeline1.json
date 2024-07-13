@@ -103,6 +103,33 @@
 					"variableName": "TARGET_CONTAINER_NAME",
 					"value": "output"
 				}
+			},
+			{
+				"name": "Transform",
+				"type": "DatabricksNotebook",
+				"dependsOn": [
+					{
+						"activity": "pre_process",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"notebookPath": "/Repos/vyeli@itba.edu.ar/databricks-etl/transform"
+				},
+				"linkedServiceName": {
+					"referenceName": "Transform",
+					"type": "LinkedServiceReference"
+				}
 			}
 		],
 		"variables": {
