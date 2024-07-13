@@ -109,7 +109,13 @@
 				"type": "DatabricksNotebook",
 				"dependsOn": [
 					{
-						"activity": "pre_process",
+						"activity": "Set Storage Account ",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					},
+					{
+						"activity": "Set processed csv container name",
 						"dependencyConditions": [
 							"Succeeded"
 						]
@@ -124,11 +130,64 @@
 				},
 				"userProperties": [],
 				"typeProperties": {
-					"notebookPath": "/Repos/vyeli@itba.edu.ar/databricks-etl/transform"
+					"notebookPath": "/Repos/vyeli@itba.edu.ar/databricks-etl/transform",
+					"baseParameters": {
+						"CONTAINER_NAME": {
+							"value": "@variables('PROCESSED_CONTAINER_NAME')",
+							"type": "Expression"
+						},
+						"STORAGE_ACCOUNT_NAME": {
+							"value": "@variables('STORAGE_ACCOUNT_NAME')",
+							"type": "Expression"
+						}
+					}
 				},
 				"linkedServiceName": {
 					"referenceName": "Transform",
 					"type": "LinkedServiceReference"
+				}
+			},
+			{
+				"name": "Set Storage Account",
+				"type": "SetVariable",
+				"dependsOn": [
+					{
+						"activity": "pre_process",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "STORAGE_ACCOUNT_NAME",
+					"value": "bsdataflow"
+				}
+			},
+			{
+				"name": "Set processed csv container name",
+				"description": "output folder",
+				"type": "SetVariable",
+				"dependsOn": [
+					{
+						"activity": "pre_process",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "CONTAINER_NAME",
+					"value": "output"
 				}
 			}
 		],
@@ -140,6 +199,9 @@
 				"type": "String"
 			},
 			"TARGET_CONTAINER_NAME": {
+				"type": "String"
+			},
+			"PROCESSED_CONTAINER_NAME": {
 				"type": "String"
 			}
 		},
