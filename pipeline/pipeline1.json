@@ -1,0 +1,147 @@
+{
+	"name": "pipeline1",
+	"properties": {
+		"activities": [
+			{
+				"name": "pre_process",
+				"type": "DatabricksNotebook",
+				"dependsOn": [
+					{
+						"activity": "Set Target Container Name",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					},
+					{
+						"activity": "Set Storage Account Key",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					},
+					{
+						"activity": "Set Container Name",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					},
+					{
+						"activity": "Set Storage Account Name",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"typeProperties": {
+					"notebookPath": "/Repos/vyeli@itba.edu.ar/databricks-etl/pre_process",
+					"baseParameters": {
+						"STORAGE_ACCOUNT_KEY": {
+							"value": "@variables('STORAGE_ACCOUNT_KEY')",
+							"type": "Expression"
+						},
+						"STORAGE_ACCOUNT_NAME": {
+							"value": "@variables('STORAGE_ACCOUNT_NAME')",
+							"type": "Expression"
+						},
+						"CONTAINER_NAME": {
+							"value": "@variables('CONTAINER_NAME')",
+							"type": "Expression"
+						},
+						"TARGET_CONTAINER_NAME": {
+							"value": "@variables('TARGET_CONTAINER_NAME')",
+							"type": "Expression"
+						}
+					},
+					"libraries": [
+						{
+							"pypi": {
+								"package": "azure-storage-blob"
+							}
+						}
+					]
+				},
+				"linkedServiceName": {
+					"referenceName": "Preprocess",
+					"type": "LinkedServiceReference"
+				}
+			},
+			{
+				"name": "Set Storage Account Name",
+				"type": "SetVariable",
+				"dependsOn": [],
+				"policy": {
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "STORAGE_ACCOUNT_NAME",
+					"value": "bsdataflow"
+				}
+			},
+			{
+				"name": "Set Container Name",
+				"type": "SetVariable",
+				"dependsOn": [],
+				"policy": {
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "CONTAINER_NAME",
+					"value": "input"
+				}
+			},
+			{
+				"name": "Set Storage Account Key",
+				"type": "SetVariable",
+				"dependsOn": [],
+				"policy": {
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "STORAGE_ACCOUNT_KEY",
+					"value": ""
+				}
+			},
+			{
+				"name": "Set Target Container Name",
+				"type": "SetVariable",
+				"dependsOn": [],
+				"policy": {
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "TARGET_CONTAINER_NAME",
+					"value": "output"
+				}
+			}
+		],
+		"variables": {
+			"STORAGE_ACCOUNT_KEY": {
+				"type": "String"
+			},
+			"CONTAINER_NAME": {
+				"type": "String"
+			},
+			"STORAGE_ACCOUNT_NAME": {
+				"type": "String"
+			},
+			"TARGET_CONTAINER_NAME": {
+				"type": "String"
+			}
+		},
+		"annotations": []
+	}
+}
