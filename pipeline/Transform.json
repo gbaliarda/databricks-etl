@@ -1,25 +1,19 @@
 {
-	"name": "Preprocess",
+	"name": "Transform",
 	"properties": {
 		"activities": [
 			{
-				"name": "pre_process",
+				"name": "Transform",
 				"type": "DatabricksNotebook",
 				"dependsOn": [
 					{
-						"activity": "Set Target Container Name",
-						"dependencyConditions": [
-							"Succeeded"
-						]
-					},
-					{
-						"activity": "Set Container Name",
-						"dependencyConditions": [
-							"Succeeded"
-						]
-					},
-					{
 						"activity": "Set Storage Account Name",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					},
+					{
+						"activity": "Set processed csv container name",
 						"dependencyConditions": [
 							"Succeeded"
 						]
@@ -34,31 +28,20 @@
 				},
 				"userProperties": [],
 				"typeProperties": {
-					"notebookPath": "/Repos/vyeli@itba.edu.ar/databricks-etl/pre_process",
+					"notebookPath": "/Repos/vyeli@itba.edu.ar/databricks-etl/transform",
 					"baseParameters": {
-						"STORAGE_ACCOUNT_NAME": {
-							"value": "@variables('STORAGE_ACCOUNT_NAME')",
-							"type": "Expression"
-						},
 						"CONTAINER_NAME": {
 							"value": "@variables('CONTAINER_NAME')",
 							"type": "Expression"
 						},
-						"TARGET_CONTAINER_NAME": {
-							"value": "@variables('TARGET_CONTAINER_NAME')",
+						"STORAGE_ACCOUNT_NAME": {
+							"value": "@variables('STORAGE_ACCOUNT_NAME')",
 							"type": "Expression"
 						}
-					},
-					"libraries": [
-						{
-							"pypi": {
-								"package": "azure-storage-blob"
-							}
-						}
-					]
+					}
 				},
 				"linkedServiceName": {
-					"referenceName": "Preprocess",
+					"referenceName": "Transform",
 					"type": "LinkedServiceReference"
 				}
 			},
@@ -77,7 +60,8 @@
 				}
 			},
 			{
-				"name": "Set Container Name",
+				"name": "Set processed csv container name",
+				"description": "output folder",
 				"type": "SetVariable",
 				"dependsOn": [],
 				"policy": {
@@ -87,32 +71,15 @@
 				"userProperties": [],
 				"typeProperties": {
 					"variableName": "CONTAINER_NAME",
-					"value": "input"
-				}
-			},
-			{
-				"name": "Set Target Container Name",
-				"type": "SetVariable",
-				"dependsOn": [],
-				"policy": {
-					"secureOutput": false,
-					"secureInput": false
-				},
-				"userProperties": [],
-				"typeProperties": {
-					"variableName": "TARGET_CONTAINER_NAME",
 					"value": "output"
 				}
 			}
 		],
 		"variables": {
-			"CONTAINER_NAME": {
-				"type": "String"
-			},
 			"STORAGE_ACCOUNT_NAME": {
 				"type": "String"
 			},
-			"TARGET_CONTAINER_NAME": {
+			"CONTAINER_NAME": {
 				"type": "String"
 			}
 		},
