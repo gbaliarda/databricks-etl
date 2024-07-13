@@ -35,10 +35,6 @@
 				"typeProperties": {
 					"notebookPath": "/Repos/vyeli@itba.edu.ar/databricks-etl/pre_process",
 					"baseParameters": {
-						"STORAGE_ACCOUNT_KEY": {
-							"value": "@variables('STORAGE_ACCOUNT_KEY')",
-							"type": "Expression"
-						},
 						"STORAGE_ACCOUNT_NAME": {
 							"value": "@variables('STORAGE_ACCOUNT_NAME')",
 							"type": "Expression"
@@ -109,9 +105,6 @@
 			}
 		],
 		"variables": {
-			"STORAGE_ACCOUNT_KEY": {
-				"type": "String"
-			},
 			"CONTAINER_NAME": {
 				"type": "String"
 			},
