@@ -109,13 +109,13 @@
 				"type": "DatabricksNotebook",
 				"dependsOn": [
 					{
-						"activity": "Set Storage Account ",
+						"activity": "Set processed csv container name",
 						"dependencyConditions": [
 							"Succeeded"
 						]
 					},
 					{
-						"activity": "Set processed csv container name",
+						"activity": "Set Storage Account",
 						"dependencyConditions": [
 							"Succeeded"
 						]
