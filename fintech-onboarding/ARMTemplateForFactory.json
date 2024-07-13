@@ -26,6 +26,10 @@
 		"Preprocess_properties_typeProperties_existingClusterId": {
 			"type": "string",
 			"defaultValue": "0713-023133-bn1ygrfx"
+		},
+		"Transform_properties_typeProperties_existingClusterId": {
+			"type": "string",
+			"defaultValue": "0713-023133-bn1ygrfx"
 		}
 	},
 	"variables": {
@@ -139,6 +143,92 @@
 							"variableName": "TARGET_CONTAINER_NAME",
 							"value": "output"
 						}
+					},
+					{
+						"name": "Transform",
+						"type": "DatabricksNotebook",
+						"dependsOn": [
+							{
+								"activity": "Set processed csv container name",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							},
+							{
+								"activity": "Set Storage Account",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"notebookPath": "/Repos/vyeli@itba.edu.ar/databricks-etl/transform",
+							"baseParameters": {
+								"CONTAINER_NAME": {
+									"value": "@variables('PROCESSED_CONTAINER_NAME')",
+									"type": "Expression"
+								},
+								"STORAGE_ACCOUNT_NAME": {
+									"value": "@variables('STORAGE_ACCOUNT_NAME')",
+									"type": "Expression"
+								}
+							}
+						},
+						"linkedServiceName": {
+							"referenceName": "Transform",
+							"type": "LinkedServiceReference"
+						}
+					},
+					{
+						"name": "Set Storage Account",
+						"type": "SetVariable",
+						"dependsOn": [
+							{
+								"activity": "pre_process",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"variableName": "STORAGE_ACCOUNT_NAME",
+							"value": "bsdataflow"
+						}
+					},
+					{
+						"name": "Set processed csv container name",
+						"description": "output folder",
+						"type": "SetVariable",
+						"dependsOn": [
+							{
+								"activity": "pre_process",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"variableName": "CONTAINER_NAME",
+							"value": "output"
+						}
 					}
 				],
 				"policy": {
@@ -153,12 +243,16 @@
 					},
 					"TARGET_CONTAINER_NAME": {
 						"type": "String"
+					},
+					"PROCESSED_CONTAINER_NAME": {
+						"type": "String"
 					}
 				},
 				"annotations": []
 			},
 			"dependsOn": [
-				"[concat(variables('factoryId'), '/linkedServices/Preprocess')]"
+				"[concat(variables('factoryId'), '/linkedServices/Preprocess')]",
+				"[concat(variables('factoryId'), '/linkedServices/Transform')]"
 			]
 		},
 		{
@@ -351,14 +445,7 @@
 						"type": "SecureString",
 						"value": "[parameters('Transform_accessToken')]"
 					},
-					"newClusterNodeType": "Standard_DS3_v2",
-					"newClusterNumOfWorker": "1",
-					"newClusterSparkEnvVars": {
-						"PYSPARK_PYTHON": "/databricks/python3/bin/python3"
-					},
-					"newClusterVersion": "15.3.x-scala2.12",
-					"clusterOption": "Fixed",
-					"newClusterInitScripts": []
+					"existingClusterId": "[parameters('Transform_properties_typeProperties_existingClusterId')]"
 				}
 			},
 			"dependsOn": []

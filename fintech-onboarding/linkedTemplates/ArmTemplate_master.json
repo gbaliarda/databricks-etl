@@ -27,6 +27,10 @@
 			"type": "string",
 			"defaultValue": "0713-023133-bn1ygrfx"
 		},
+		"Transform_properties_typeProperties_existingClusterId": {
+			"type": "string",
+			"defaultValue": "0713-023133-bn1ygrfx"
+		},
 		"containerUri": {
 			"type": "string",
 			"metadata": "URI to storage account containing linked ARM templates"
@@ -68,6 +72,9 @@
 					},
 					"Preprocess_properties_typeProperties_existingClusterId": {
 						"value": "[parameters('Preprocess_properties_typeProperties_existingClusterId')]"
+					},
+					"Transform_properties_typeProperties_existingClusterId": {
+						"value": "[parameters('Transform_properties_typeProperties_existingClusterId')]"
 					}
 				}
 			},
