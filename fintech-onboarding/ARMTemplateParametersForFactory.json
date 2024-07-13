@@ -16,6 +16,9 @@
 		},
 		"bsoutput_connectionString": {
 			"value": ""
+		},
+		"Preprocess_properties_typeProperties_existingClusterId": {
+			"value": "0713-023133-bn1ygrfx"
 		}
 	}
 }
