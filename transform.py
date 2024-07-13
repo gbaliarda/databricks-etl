@@ -255,11 +255,7 @@ df_final.show(10)
 
 # COMMAND ----------
 
-dbutils.widgets.text("JDBC_URL", "<JDBC_URL>", "JDBC URL")
-
-# COMMAND ----------
-
-jdbc_url = dbutils.widgets.get("JDBC_URL")
+jdbc_url = dbutils.secrets.get(scope="bigdata", key="sqljdbcurl")
 
 # COMMAND ----------
 
