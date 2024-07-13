@@ -32,6 +32,7 @@
 					"secureOutput": false,
 					"secureInput": false
 				},
+				"userProperties": [],
 				"typeProperties": {
 					"notebookPath": "/Repos/vyeli@itba.edu.ar/databricks-etl/pre_process",
 					"baseParameters": {
