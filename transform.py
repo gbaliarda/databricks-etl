@@ -18,16 +18,14 @@ spark = SparkSession.builder.appName("BigData").getOrCreate()
 
 # COMMAND ----------
 
-dbutils.widgets.text("STORAGE_ACCOUNT_KEY", "<STORAGE_ACCOUNT_KEY>", "STORAGE ACCOUNT KEY")
 dbutils.widgets.text("CONTAINER_NAME", "<CONTAINER_NAME>", "BLOB STORAGE CONTAINER NAME")
 dbutils.widgets.text("STORAGE_ACCOUNT_NAME", "<STORAGE_ACCOUNT_NAME>", "BLOB STORAGE ACCOUNT NAME")
 
 # COMMAND ----------
 
-storage_account_key = dbutils.widgets.get("STORAGE_ACCOUNT_KEY")
 container_name = dbutils.widgets.get("CONTAINER_NAME")
 storage_account_name = dbutils.widgets.get("STORAGE_ACCOUNT_NAME")
-spark.conf.set(f"fs.azure.account.key.{storage_account_name}.blob.core.windows.net", storage_account_key)
+spark.conf.set(f"fs.azure.account.key.{storage_account_name}.blob.core.windows.net", dbutils.secrets.get(scope="bigdata", key="blobkey"))
 
 
 data_folder = f"wasbs://{container_name}@{storage_account_name}.blob.core.windows.net/"
