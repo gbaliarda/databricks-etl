@@ -63,22 +63,7 @@ df_lk_users = read_latest_part_csv(f"{data_folder}/lk_users")
 
 # COMMAND ----------
 
-df_bt_users_aggregated = df_bt_users_transactions.groupBy("user_id").agg(count("*").alias("transaction_count"))
-
-df_lk_onboarding_with_transactions = df_lk_onboarding.join(
-    df_bt_users_aggregated,
-    on="user_id",
-    how="left"
-).select(
-    df_lk_onboarding["*"],  # select all columns from df_lk_onboarding
-    df_bt_users_aggregated["transaction_count"]  # select transaction_count from df_bt_users_aggregated
-)
-
-df_lk_onboarding_with_transactions = df_lk_onboarding_with_transactions.withColumn("transaction_count", when(col("transaction_count").isNull(), "0").otherwise(col("transaction_count")))
-
-# COMMAND ----------
-
-df_final = df_lk_users.join(df_lk_onboarding_with_transactions, on="user_id", how="inner")
+df_final = df_lk_users.join(df_lk_onboarding, on="user_id", how="inner")
 
 df_final = df_final.select(
     "user_id",
