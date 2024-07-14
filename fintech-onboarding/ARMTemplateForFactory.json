@@ -37,7 +37,7 @@
 	},
 	"resources": [
 		{
-			"name": "[concat(parameters('factoryName'), '/pipeline1')]",
+			"name": "[concat(parameters('factoryName'), '/Preprocess')]",
 			"type": "Microsoft.DataFactory/factories/pipelines",
 			"apiVersion": "2018-06-01",
 			"properties": {
@@ -143,92 +143,6 @@
 							"variableName": "TARGET_CONTAINER_NAME",
 							"value": "output"
 						}
-					},
-					{
-						"name": "Transform",
-						"type": "DatabricksNotebook",
-						"dependsOn": [
-							{
-								"activity": "Set processed csv container name",
-								"dependencyConditions": [
-									"Succeeded"
-								]
-							},
-							{
-								"activity": "Set Storage Account",
-								"dependencyConditions": [
-									"Succeeded"
-								]
-							}
-						],
-						"policy": {
-							"timeout": "0.12:00:00",
-							"retry": 0,
-							"retryIntervalInSeconds": 30,
-							"secureOutput": false,
-							"secureInput": false
-						},
-						"userProperties": [],
-						"typeProperties": {
-							"notebookPath": "/Repos/vyeli@itba.edu.ar/databricks-etl/transform",
-							"baseParameters": {
-								"CONTAINER_NAME": {
-									"value": "@variables('PROCESSED_CONTAINER_NAME')",
-									"type": "Expression"
-								},
-								"STORAGE_ACCOUNT_NAME": {
-									"value": "@variables('STORAGE_ACCOUNT_NAME')",
-									"type": "Expression"
-								}
-							}
-						},
-						"linkedServiceName": {
-							"referenceName": "Transform",
-							"type": "LinkedServiceReference"
-						}
-					},
-					{
-						"name": "Set Storage Account",
-						"type": "SetVariable",
-						"dependsOn": [
-							{
-								"activity": "pre_process",
-								"dependencyConditions": [
-									"Succeeded"
-								]
-							}
-						],
-						"policy": {
-							"secureOutput": false,
-							"secureInput": false
-						},
-						"userProperties": [],
-						"typeProperties": {
-							"variableName": "STORAGE_ACCOUNT_NAME",
-							"value": "bsdataflow"
-						}
-					},
-					{
-						"name": "Set processed csv container name",
-						"description": "output folder",
-						"type": "SetVariable",
-						"dependsOn": [
-							{
-								"activity": "pre_process",
-								"dependencyConditions": [
-									"Succeeded"
-								]
-							}
-						],
-						"policy": {
-							"secureOutput": false,
-							"secureInput": false
-						},
-						"userProperties": [],
-						"typeProperties": {
-							"variableName": "PROCESSED_CONTAINER_NAME",
-							"value": "output"
-						}
 					}
 				],
 				"policy": {
@@ -243,16 +157,12 @@
 					},
 					"TARGET_CONTAINER_NAME": {
 						"type": "String"
-					},
-					"PROCESSED_CONTAINER_NAME": {
-						"type": "String"
 					}
 				},
 				"annotations": []
 			},
 			"dependsOn": [
-				"[concat(variables('factoryId'), '/linkedServices/Preprocess')]",
-				"[concat(variables('factoryId'), '/linkedServices/Transform')]"
+				"[concat(variables('factoryId'), '/linkedServices/Preprocess')]"
 			]
 		},
 		{
@@ -475,6 +385,102 @@
 				}
 			},
 			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/Transform')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "Transform",
+						"type": "DatabricksNotebook",
+						"dependsOn": [
+							{
+								"activity": "Set Storage Account Name",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							},
+							{
+								"activity": "Set processed csv container name",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"notebookPath": "/Repos/vyeli@itba.edu.ar/databricks-etl/transform",
+							"baseParameters": {
+								"CONTAINER_NAME": {
+									"value": "@variables('CONTAINER_NAME')",
+									"type": "Expression"
+								},
+								"STORAGE_ACCOUNT_NAME": {
+									"value": "@variables('STORAGE_ACCOUNT_NAME')",
+									"type": "Expression"
+								}
+							}
+						},
+						"linkedServiceName": {
+							"referenceName": "Transform",
+							"type": "LinkedServiceReference"
+						}
+					},
+					{
+						"name": "Set Storage Account Name",
+						"type": "SetVariable",
+						"dependsOn": [],
+						"policy": {
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"variableName": "STORAGE_ACCOUNT_NAME",
+							"value": "bsdataflow"
+						}
+					},
+					{
+						"name": "Set processed csv container name",
+						"description": "output folder",
+						"type": "SetVariable",
+						"dependsOn": [],
+						"policy": {
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"variableName": "CONTAINER_NAME",
+							"value": "output"
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"variables": {
+					"STORAGE_ACCOUNT_NAME": {
+						"type": "String"
+					},
+					"CONTAINER_NAME": {
+						"type": "String"
+					}
+				},
+				"annotations": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/Transform')]"
+			]
 		}
 	]
 }
